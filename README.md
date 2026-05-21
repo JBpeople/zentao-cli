@@ -8,7 +8,7 @@
 - 产品只读：查询、查看
 - 任务处理：查询、查看、更新状态、评论、完成
 - Bug 只读：查询、查看
-- 需求只读：查询、查看
+- 需求处理：查询、查看、创建、变更标题/描述/验收标准
 - 默认表格输出，支持 `--json` 供脚本解析
 
 > 当前实现基于禅道 RESTful API v1，默认请求路径形如
@@ -193,6 +193,27 @@ zentao story view 789
 zentao story view 789 --json
 ```
 
+创建需求：
+
+```bash
+zentao story create --product 5 --title "支持批量导入客户" --spec "作为运营，我希望批量导入客户，以减少手工录入。" --verify "上传模板文件后，系统创建客户并返回导入结果。"
+```
+
+常用可选参数：
+
+```bash
+zentao story create --product 5 --title "支持批量导入客户" --spec "需求描述" --verify "验收标准" --pri 2 --category feature --json
+```
+
+变更需求标题、描述或验收标准：
+
+```bash
+zentao story change 789 --title "支持 Excel 批量导入客户" --spec "更新后的需求描述" --verify "更新后的验收标准"
+zentao story change 789 --title "支持 Excel 批量导入客户" --spec "更新后的需求描述" --json
+```
+
+`story create` 会先校验 `--product` 是否存在且当前账号可见，避免禅道接口在产品 ID 错误时回退到默认产品。
+
 如果指定的产品 ID 不存在，或当前账号不可见，CLI 会报错而不是使用禅道接口的默认回退结果。
 
 ## JSON 输出
@@ -205,6 +226,8 @@ zentao task list --execution 303 --mine --json
 zentao task view 123 --json
 zentao bug list --product 5 --assigned-to alice --json
 zentao story list --product 5 --json
+zentao story create --product 5 --title "支持批量导入客户" --spec "需求描述" --json
+zentao story change 789 --title "新标题" --spec "新描述" --json
 ```
 
 成功输出结构：
@@ -271,6 +294,15 @@ zentao task list --execution 303 --mine --json > tasks.json
 zentao story list --product 5 --json > stories.json
 ```
 
+产品经理创建并调整需求：
+
+```bash
+zentao product list
+zentao story create --product 5 --title "支持批量导入客户" --spec "作为运营，我希望批量导入客户，以减少手工录入。" --verify "上传模板文件后，系统创建客户并返回导入结果。" --pri 2
+zentao story change 789 --title "支持 Excel 批量导入客户" --spec "补充字段映射和错误行下载规则" --verify "导入后能看到成功数、失败数和失败明细"
+zentao story view 789
+```
+
 ## 手动 Smoke Test
 
 连接真实禅道开源版 21.7.5 后，建议按顺序验证：
@@ -291,6 +323,13 @@ zentao task list --execution 303 --json
 zentao task update 123 --status doing
 zentao task comment 123 "CLI smoke test"
 zentao task finish 123 --comment "CLI smoke test done"
+```
+
+验证需求写操作前，请先确认一个可以创建测试数据的产品 ID，并使用明显的测试标题：
+
+```bash
+zentao story create --product 5 --title "[CLI TEST] 创建需求 smoke test" --spec "CLI smoke test" --verify "CLI smoke test" --json
+zentao story change 789 --title "[CLI TEST] 更新需求 smoke test" --spec "CLI smoke test updated" --verify "CLI smoke test updated" --json
 ```
 
 ## 开发
@@ -330,8 +369,10 @@ zentao_cli/
 ## 当前限制
 
 - 只面向禅道开源版 21.7.5 的 API v1。
-- 产品、Bug 和需求目前只支持只读查询。
+- 产品和 Bug 目前只支持只读查询。
+- 需求支持创建和变更标题/描述/验收标准，暂不支持关闭、评审、拆分、指派或状态流转。
 - Bug 和需求列表必须传 `--product`。
 - 任务列表必须传 `--execution`。
 - 当前没有 `logout`、多 profile 和 keyring 存储。
 - `task update/comment/finish` 会直接修改禅道数据，请先在测试任务上验证。
+- `story create/change` 会直接修改禅道数据，请先在测试产品上验证。

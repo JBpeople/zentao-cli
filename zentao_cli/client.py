@@ -155,3 +155,46 @@ class ZentaoClient:
     def get_story(self, story_id: int) -> Story:
         data = self._request("GET", f"stories/{story_id}")
         return Story.from_api(data.get("story") or data.get("data") or data)
+
+    def create_story(
+        self,
+        product: int,
+        title: str,
+        spec: str,
+        verify: str | None = None,
+        pri: int = 3,
+        category: str = "feature",
+    ) -> Story:
+        self._product_scope(product)
+        payload: dict[str, Any] = {
+            "product": product,
+            "title": title,
+            "spec": spec,
+            "pri": pri,
+            "category": category,
+        }
+        if verify:
+            payload["verify"] = verify
+
+        data = self._request("POST", "stories", json=payload)
+        story_payload = data.get("story") or data.get("data") or data
+        if "title" not in story_payload and story_payload.get("id"):
+            return self.get_story(int(story_payload["id"]))
+        return Story.from_api(story_payload)
+
+    def change_story(
+        self,
+        story_id: int,
+        title: str,
+        spec: str,
+        verify: str | None = None,
+    ) -> Story:
+        payload: dict[str, Any] = {"title": title, "spec": spec}
+        if verify:
+            payload["verify"] = verify
+
+        data = self._request("POST", f"stories/{story_id}/change", json=payload)
+        story_payload = data.get("story") or data.get("data") or data
+        if "title" not in story_payload and story_payload.get("id"):
+            return self.get_story(int(story_payload["id"]))
+        return Story.from_api(story_payload)

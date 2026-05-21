@@ -40,6 +40,89 @@ def test_story_list_json(mocker):
     client.list_stories.assert_called_once_with(product=2, status=None)
 
 
+def test_story_create_json(mocker):
+    client = mocker.Mock()
+    client.create_story.return_value = Story(id=42, title="Improve onboarding", status="active")
+    mocker.patch("zentao_cli.commands.story.client_from_profile", return_value=client)
+
+    result = runner.invoke(
+        app,
+        [
+            "story",
+            "create",
+            "--product",
+            "5",
+            "--title",
+            "Improve onboarding",
+            "--spec",
+            "As a user, I can finish onboarding.",
+            "--verify",
+            "Dashboard is shown.",
+            "--pri",
+            "2",
+            "--category",
+            "feature",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["data"]["id"] == 42
+    client.create_story.assert_called_once_with(
+        product=5,
+        title="Improve onboarding",
+        spec="As a user, I can finish onboarding.",
+        verify="Dashboard is shown.",
+        pri=2,
+        category="feature",
+    )
+
+
+def test_story_create_requires_product_title_and_spec():
+    result = runner.invoke(app, ["story", "create", "--json"])
+    assert result.exit_code == 2
+    assert "product" in result.stderr.lower()
+
+    result = runner.invoke(app, ["story", "create", "--product", "5", "--json"])
+    assert result.exit_code == 2
+    assert "title" in result.stderr.lower()
+
+    result = runner.invoke(app, ["story", "create", "--product", "5", "--title", "Missing spec", "--json"])
+    assert result.exit_code == 2
+    assert "spec" in result.stderr.lower()
+
+
+def test_story_change_json(mocker):
+    client = mocker.Mock()
+    client.change_story.return_value = Story(id=42, title="Improve onboarding v2", status="active")
+    mocker.patch("zentao_cli.commands.story.client_from_profile", return_value=client)
+
+    result = runner.invoke(
+        app,
+        [
+            "story",
+            "change",
+            "42",
+            "--title",
+            "Improve onboarding v2",
+            "--spec",
+            "Updated body",
+            "--verify",
+            "Updated verify",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["data"]["title"] == "Improve onboarding v2"
+    client.change_story.assert_called_once_with(
+        story_id=42,
+        title="Improve onboarding v2",
+        spec="Updated body",
+        verify="Updated verify",
+    )
+
+
 def test_bug_list_json_api_error(mocker):
     client = mocker.Mock()
     client.list_bugs.side_effect = ApiError("Need product id.")

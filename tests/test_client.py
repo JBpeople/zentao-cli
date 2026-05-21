@@ -1,9 +1,11 @@
+import json
+
 import httpx
 import respx
 
 from zentao_cli.client import ZentaoClient
 from zentao_cli.errors import ApiError, NotFoundError
-from zentao_cli.models import Product, Task
+from zentao_cli.models import Product, Story, Task
 
 
 @respx.mock
@@ -187,3 +189,95 @@ def test_list_stories_rejects_unknown_product_before_querying_stories():
         assert str(exc) == "Product 1000 was not found or is not visible"
     else:
         raise AssertionError("Expected NotFoundError")
+
+
+@respx.mock
+def test_create_story_posts_story_payload():
+    respx.get("https://zentao.example.com/api.php/v1/products").mock(
+        return_value=httpx.Response(200, json={"products": [{"id": 5}]})
+    )
+    route = respx.post("https://zentao.example.com/api.php/v1/stories").mock(
+        return_value=httpx.Response(
+            201,
+            json={
+                "story": {
+                    "id": 42,
+                    "title": "Improve onboarding",
+                    "status": "active",
+                    "pri": "2",
+                    "type": "story",
+                }
+            },
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    story = client.create_story(
+        product=5,
+        title="Improve onboarding",
+        spec="As a user, I can finish onboarding.",
+        verify="Given a new user, when they complete steps, then they see the dashboard.",
+        pri=2,
+        category="feature",
+    )
+
+    assert route.called
+    assert json.loads(route.calls.last.request.content) == {
+        "product": 5,
+        "title": "Improve onboarding",
+        "spec": "As a user, I can finish onboarding.",
+        "verify": "Given a new user, when they complete steps, then they see the dashboard.",
+        "pri": 2,
+        "category": "feature",
+    }
+    assert story == Story(id=42, title="Improve onboarding", status="active", priority="2", type="story")
+
+
+@respx.mock
+def test_create_story_rejects_unknown_product_before_posting():
+    respx.get("https://zentao.example.com/api.php/v1/products").mock(
+        return_value=httpx.Response(200, json={"products": [{"id": 5}]})
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+
+    try:
+        client.create_story(product=1000, title="Missing", spec="No product")
+    except NotFoundError as exc:
+        assert str(exc) == "Product 1000 was not found or is not visible"
+    else:
+        raise AssertionError("Expected NotFoundError")
+
+
+@respx.mock
+def test_change_story_posts_change_payload():
+    route = respx.post("https://zentao.example.com/api.php/v1/stories/42/change").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "story": {
+                    "id": 42,
+                    "title": "Improve onboarding v2",
+                    "status": "active",
+                    "pri": "2",
+                }
+            },
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    story = client.change_story(
+        story_id=42,
+        title="Improve onboarding v2",
+        spec="Updated story body",
+        verify="Updated acceptance criteria",
+    )
+
+    assert route.called
+    assert json.loads(route.calls.last.request.content) == {
+        "title": "Improve onboarding v2",
+        "spec": "Updated story body",
+        "verify": "Updated acceptance criteria",
+    }
+    assert story.id == 42
+    assert story.title == "Improve onboarding v2"

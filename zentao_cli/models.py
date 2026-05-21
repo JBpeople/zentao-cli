@@ -92,6 +92,9 @@ class Story:
     status: str = ""
     stage: str = ""
     product: str = ""
+    priority: str = ""
+    category: str = ""
+    type: str = ""
 
     @classmethod
     def from_api(cls, payload: dict[str, Any]) -> Story:
@@ -101,4 +104,7 @@ class Story:
             status=str(payload.get("status", "")),
             stage=str(payload.get("stage", "")),
             product=str(payload.get("productName") or payload.get("product") or ""),
+            priority=str(payload.get("pri") or payload.get("priority") or ""),
+            category=str(payload.get("category", "")),
+            type=str(payload.get("type", "")),
         )
