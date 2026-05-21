@@ -4,8 +4,10 @@ import typer
 
 from zentao_cli import __version__
 from zentao_cli.auth import login_interactive, require_profile
+from zentao_cli.commands import task
 
 app = typer.Typer(help="CLI for Zentao Open Source Edition 21.7.5.")
+app.add_typer(task.app, name="task")
 
 
 def version_callback(value: bool) -> None:
