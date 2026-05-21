@@ -5,7 +5,8 @@ from rich.console import Console
 from rich.table import Table
 
 from zentao_cli.auth import client_from_profile
-from zentao_cli.formatters import json_payload
+from zentao_cli.errors import ZentaoCliError
+from zentao_cli.formatters import error_payload, json_payload
 from zentao_cli.models import Task
 
 app = typer.Typer(help="Task commands.")
@@ -41,8 +42,15 @@ def list_tasks(
     project: int | None = typer.Option(None, "--project", help="Filter by project ID."),
     as_json: bool = typer.Option(False, "--json", help="Output JSON."),
 ) -> None:
-    client = client_from_profile()
-    tasks = client.list_tasks(mine=mine, status=status, project=project)
+    try:
+        client = client_from_profile()
+        tasks = client.list_tasks(mine=mine, status=status, project=project)
+    except ZentaoCliError as exc:
+        if as_json:
+            typer.echo(error_payload(exc))
+        else:
+            typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     if as_json:
         typer.echo(json_payload(tasks))
     else:
@@ -51,8 +59,15 @@ def list_tasks(
 
 @app.command("view")
 def view_task(task_id: int, as_json: bool = typer.Option(False, "--json", help="Output JSON.")) -> None:
-    client = client_from_profile()
-    task = client.get_task(task_id)
+    try:
+        client = client_from_profile()
+        task = client.get_task(task_id)
+    except ZentaoCliError as exc:
+        if as_json:
+            typer.echo(error_payload(exc))
+        else:
+            typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     if as_json:
         typer.echo(json_payload(task))
     else:
@@ -61,20 +76,32 @@ def view_task(task_id: int, as_json: bool = typer.Option(False, "--json", help="
 
 @app.command("update")
 def update_task(task_id: int, status: str = typer.Option(..., "--status")) -> None:
-    client = client_from_profile()
-    task = client.update_task_status(task_id, status)
+    try:
+        client = client_from_profile()
+        task = client.update_task_status(task_id, status)
+    except ZentaoCliError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     typer.echo(f"Updated task {task.id} to {task.status}")
 
 
 @app.command("comment")
 def comment_task(task_id: int, content: str) -> None:
-    client = client_from_profile()
-    client.comment_task(task_id, content)
+    try:
+        client = client_from_profile()
+        client.comment_task(task_id, content)
+    except ZentaoCliError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     typer.echo(f"Commented on task {task_id}")
 
 
 @app.command("finish")
 def finish_task(task_id: int, comment: str | None = typer.Option(None, "--comment")) -> None:
-    client = client_from_profile()
-    task = client.finish_task(task_id, comment=comment)
+    try:
+        client = client_from_profile()
+        task = client.finish_task(task_id, comment=comment)
+    except ZentaoCliError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     typer.echo(f"Finished task {task.id}")
