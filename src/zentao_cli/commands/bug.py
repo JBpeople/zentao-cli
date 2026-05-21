@@ -5,7 +5,8 @@ from rich.console import Console
 from rich.table import Table
 
 from zentao_cli.auth import client_from_profile
-from zentao_cli.formatters import json_payload
+from zentao_cli.errors import ZentaoCliError
+from zentao_cli.formatters import error_payload, json_payload
 from zentao_cli.models import Bug
 
 app = typer.Typer(help="Bug commands.")
@@ -26,12 +27,20 @@ def _bug_table(bugs: list[Bug]) -> Table:
 
 @app.command("list")
 def list_bugs(
+    product: int | None = typer.Option(None, "--product", help="Filter by product ID."),
     assigned_to: str | None = typer.Option(None, "--assigned-to"),
     status: str | None = typer.Option(None, "--status"),
     as_json: bool = typer.Option(False, "--json", help="Output JSON."),
 ) -> None:
-    client = client_from_profile()
-    bugs = client.list_bugs(assigned_to=assigned_to, status=status)
+    try:
+        client = client_from_profile()
+        bugs = client.list_bugs(product=product, assigned_to=assigned_to, status=status)
+    except ZentaoCliError as exc:
+        if as_json:
+            typer.echo(error_payload(exc))
+        else:
+            typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     if as_json:
         typer.echo(json_payload(bugs))
     else:
@@ -40,8 +49,15 @@ def list_bugs(
 
 @app.command("view")
 def view_bug(bug_id: int, as_json: bool = typer.Option(False, "--json", help="Output JSON.")) -> None:
-    client = client_from_profile()
-    bug = client.get_bug(bug_id)
+    try:
+        client = client_from_profile()
+        bug = client.get_bug(bug_id)
+    except ZentaoCliError as exc:
+        if as_json:
+            typer.echo(error_payload(exc))
+        else:
+            typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
     if as_json:
         typer.echo(json_payload(bug))
     else:

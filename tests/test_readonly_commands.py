@@ -2,6 +2,7 @@ import json
 
 from typer.testing import CliRunner
 
+from zentao_cli.errors import ApiError
 from zentao_cli.main import app
 from zentao_cli.models import Bug, Story
 
@@ -17,7 +18,7 @@ def test_bug_list_json(mocker):
 
     assert result.exit_code == 0
     assert json.loads(result.stdout)["data"][0]["title"] == "Crash"
-    client.list_bugs.assert_called_once_with(assigned_to="me", status=None)
+    client.list_bugs.assert_called_once_with(product=None, assigned_to="me", status=None)
 
 
 def test_story_list_json(mocker):
@@ -30,3 +31,14 @@ def test_story_list_json(mocker):
     assert result.exit_code == 0
     assert json.loads(result.stdout)["data"][0]["title"] == "Login story"
     client.list_stories.assert_called_once_with(product=2, status=None)
+
+
+def test_bug_list_json_api_error(mocker):
+    client = mocker.Mock()
+    client.list_bugs.side_effect = ApiError("Need product id.")
+    mocker.patch("zentao_cli.commands.bug.client_from_profile", return_value=client)
+
+    result = runner.invoke(app, ["bug", "list", "--json"])
+
+    assert result.exit_code == 1
+    assert json.loads(result.stdout)["error"]["message"] == "Need product id."

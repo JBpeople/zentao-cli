@@ -4,6 +4,12 @@ from dataclasses import dataclass
 from typing import Any
 
 
+def _user_name(value: Any) -> str:
+    if isinstance(value, dict):
+        return str(value.get("account") or value.get("realname") or "")
+    return str(value or "")
+
+
 @dataclass(frozen=True)
 class Session:
     session_name: str
@@ -35,7 +41,7 @@ class Task:
             status=str(payload.get("status", "")),
             priority=str(payload.get("pri") or payload.get("priority") or ""),
             deadline=str(payload.get("deadline", "")),
-            assigned_to=str(payload.get("assignedTo") or payload.get("assigned_to") or ""),
+            assigned_to=_user_name(payload.get("assignedTo") or payload.get("assigned_to")),
         )
 
 
@@ -54,7 +60,7 @@ class Bug:
             title=str(payload.get("title", "")),
             status=str(payload.get("status", "")),
             severity=str(payload.get("severity", "")),
-            assigned_to=str(payload.get("assignedTo") or payload.get("assigned_to") or ""),
+            assigned_to=_user_name(payload.get("assignedTo") or payload.get("assigned_to")),
         )
 
 

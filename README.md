@@ -126,10 +126,16 @@ zentao task finish 123 --comment "功能已完成，测试通过"
 
 ## Bug 命令
 
-查询 Bug：
+查询 Bug。未指定产品时，CLI 会先读取你有权限访问的产品列表，再逐个查询产品下的 Bug：
 
 ```bash
 zentao bug list
+```
+
+只查询某个产品：
+
+```bash
+zentao bug list --product 5
 ```
 
 查询分配给某个账号的 Bug：
@@ -158,7 +164,7 @@ zentao bug view 456
 
 ## 需求命令
 
-查询需求：
+查询需求。未指定产品时，CLI 会先读取你有权限访问的产品列表，再逐个查询产品下的需求：
 
 ```bash
 zentao story list
@@ -263,12 +269,14 @@ zentao task list --mine --json > my-tasks.json
 ```bash
 zentao login
 zentao whoami
+zentao bug list --json
+zentao bug list --product 5 --json
+zentao story list --product 5 --json
 zentao task list --mine
 zentao task list --mine --json
-zentao task view 123 --json
-zentao bug list --assigned-to alice --json
-zentao story list --json
 ```
+
+如果 `task list --mine` 返回权限或上下文错误，说明该禅道实例要求任务按项目或执行上下文查询，需要再针对当前部署补任务接口适配。
 
 如果列表命令可用，再验证写操作：
 
@@ -321,5 +329,6 @@ src/zentao_cli/
 - 只面向禅道开源版 21.7.5 的 API v1。
 - Bug 和需求目前只支持只读查询。
 - 当前没有 `logout`、多 profile、环境变量覆盖和 keyring 存储。
-- 真实禅道实例的 API 字段和路径如果有定制，需要在 `src/zentao_cli/client.py` 中适配。
+- Bug 和需求列表基于产品上下文查询；不传 `--product` 时会聚合所有可见产品的第一页结果。
+- 任务列表接口在不同禅道部署中可能需要项目或执行上下文，若 `/tasks` 不可用，需要在 `src/zentao_cli/client.py` 中继续适配。
 - `task update/comment/finish` 会直接修改禅道数据，请先在测试任务上验证。
