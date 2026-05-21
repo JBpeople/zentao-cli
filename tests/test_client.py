@@ -25,7 +25,7 @@ def test_login_parses_session():
 
 @respx.mock
 def test_list_tasks_returns_normalized_tasks():
-    respx.get("https://zentao.example.com/api.php/v1/tasks").mock(
+    route = respx.get("https://zentao.example.com/api.php/v1/executions/303/tasks").mock(
         return_value=httpx.Response(
             200,
             json={"tasks": [{"id": 1, "name": "Fix login", "status": "doing"}]},
@@ -33,8 +33,9 @@ def test_list_tasks_returns_normalized_tasks():
     )
 
     client = ZentaoClient("https://zentao.example.com", session_name="zentaosid", session_id="abc123")
-    tasks = client.list_tasks(mine=True)
+    tasks = client.list_tasks(execution=303, mine=True)
 
+    assert route.called
     assert tasks == [Task(id=1, name="Fix login", status="doing")]
 
 

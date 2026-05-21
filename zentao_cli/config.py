@@ -8,6 +8,7 @@ from platformdirs import user_config_dir
 
 APP_NAME = "zentao-cli"
 DEFAULT_PROFILE = "default"
+PROJECT_ENV_PATH = Path(".env")
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,23 @@ class Profile:
 
 def default_config_path() -> Path:
     return Path(user_config_dir(APP_NAME)) / "config.toml"
+
+
+def load_project_env(path: Path = PROJECT_ENV_PATH) -> dict[str, str]:
+    if not path.exists():
+        return {}
+
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            values[key] = value
+    return values
 
 
 def load_profile(profile_name: str = DEFAULT_PROFILE, path: Path | None = None) -> Profile | None:

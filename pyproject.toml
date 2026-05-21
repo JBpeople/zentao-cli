@@ -27,4 +27,4 @@ zentao = "zentao_cli.main:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["."]

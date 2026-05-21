@@ -14,11 +14,18 @@ def test_bug_list_json(mocker):
     client.list_bugs.return_value = [Bug(id=5, title="Crash", status="active", assigned_to="alice")]
     mocker.patch("zentao_cli.commands.bug.client_from_profile", return_value=client)
 
-    result = runner.invoke(app, ["bug", "list", "--assigned-to", "me", "--json"])
+    result = runner.invoke(app, ["bug", "list", "--product", "5", "--assigned-to", "me", "--json"])
 
     assert result.exit_code == 0
     assert json.loads(result.stdout)["data"][0]["title"] == "Crash"
-    client.list_bugs.assert_called_once_with(product=None, assigned_to="me", status=None)
+    client.list_bugs.assert_called_once_with(product=5, assigned_to="me", status=None)
+
+
+def test_bug_list_requires_product():
+    result = runner.invoke(app, ["bug", "list", "--json"])
+
+    assert result.exit_code == 2
+    assert "product" in result.stderr.lower()
 
 
 def test_story_list_json(mocker):
@@ -38,7 +45,14 @@ def test_bug_list_json_api_error(mocker):
     client.list_bugs.side_effect = ApiError("Need product id.")
     mocker.patch("zentao_cli.commands.bug.client_from_profile", return_value=client)
 
-    result = runner.invoke(app, ["bug", "list", "--json"])
+    result = runner.invoke(app, ["bug", "list", "--product", "5", "--json"])
 
     assert result.exit_code == 1
     assert json.loads(result.stdout)["error"]["message"] == "Need product id."
+
+
+def test_story_list_requires_product():
+    result = runner.invoke(app, ["story", "list", "--json"])
+
+    assert result.exit_code == 2
+    assert "product" in result.stderr.lower()

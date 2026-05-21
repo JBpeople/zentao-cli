@@ -2,10 +2,9 @@
 
 面向禅道开源版 21.7.5 的 Python 命令行客户端。
 
-首版目标是覆盖个人日常任务处理和脚本自动化：
+首版目标是覆盖产品经理和个人日常协作里的高频命令：
 
-- 交互式登录：`zentao login`
-- 当前账号查看：`zentao whoami`
+- 自动或交互式登录
 - 产品只读：查询、查看
 - 任务处理：查询、查看、更新状态、评论、完成
 - Bug 只读：查询、查看
@@ -13,7 +12,7 @@
 - 默认表格输出，支持 `--json` 供脚本解析
 
 > 当前实现基于禅道 RESTful API v1，默认请求路径形如
-> `<zentao-url>/api.php/v1/...`。如果你的禅道部署在子路径下，登录时请填写禅道根地址，例如
+> `<zentao-url>/api.php/v1/...`。如果禅道部署在子路径下，请填写禅道根地址，例如
 > `https://example.com/zentao`。
 
 ## 安装
@@ -33,7 +32,7 @@ zentao --version
 zentao --help
 ```
 
-也可以不依赖 console script，直接运行模块：
+也可以直接运行模块：
 
 ```bash
 python -m zentao_cli.main --help
@@ -41,21 +40,30 @@ python -m zentao_cli.main --help
 
 ## 登录
 
-运行：
+推荐把本地凭据放在 `.env`，这样 token 过期时 CLI 会自动重新登录：
+
+```env
+ZENTAO_URL=https://zentao.example.com
+ZENTAO_USERNAME=alice
+ZENTAO_PASSWORD=secret
+```
+
+`.env` 已加入 `.gitignore`，不要提交到 GitHub。
+
+配置好 `.env` 后可以直接运行命令：
+
+```bash
+zentao product list
+zentao bug list --product 5
+```
+
+也可以手动登录：
 
 ```bash
 zentao login
 ```
 
-按提示输入：
-
-```text
-Zentao URL: https://zentao.example.com
-Username: alice
-Password:
-```
-
-登录成功后，CLI 会保存会话信息，不保存明文密码。
+手动登录会提示输入 URL、账号和密码，并保存会话 token，不保存明文密码。
 
 查看当前登录账号：
 
@@ -63,23 +71,11 @@ Password:
 zentao whoami
 ```
 
-本地配置由 `platformdirs` 决定保存位置。Windows 上通常在：
+本地 session 配置由 `platformdirs` 决定保存位置。Windows 上通常在：
 
 ```text
 C:\Users\<you>\AppData\Local\zentao-cli\config.toml
 ```
-
-配置内容类似：
-
-```toml
-[default]
-base_url = "https://zentao.example.com"
-username = "alice"
-session_name = "zentaosid"
-session_id = "..."
-```
-
-## 任务命令
 
 ## 产品命令
 
@@ -87,11 +83,6 @@ session_id = "..."
 
 ```bash
 zentao product list
-```
-
-输出 JSON：
-
-```bash
 zentao product list --json
 ```
 
@@ -112,24 +103,20 @@ zentao story list --product 5
 
 ## 任务命令
 
-查看分配给自己的任务：
+任务列表需要执行 ID。可以先从禅道网页确认执行 ID，再查询任务。
+
+查看某个执行下分配给自己的任务：
 
 ```bash
-zentao task list --mine
+zentao task list --execution 303 --mine
 ```
 
 按状态筛选：
 
 ```bash
-zentao task list --mine --status doing
-zentao task list --status wait
-zentao task list --status done
-```
-
-按项目 ID 筛选：
-
-```bash
-zentao task list --project 12
+zentao task list --execution 303 --mine --status doing
+zentao task list --execution 303 --status wait
+zentao task list --execution 303 --status done
 ```
 
 查看任务详情：
@@ -158,83 +145,66 @@ zentao task finish 123 --comment "功能已完成，测试通过"
 
 ## Bug 命令
 
-查询 Bug。未指定产品时，CLI 会先读取你有权限访问的产品列表，再逐个查询产品下的 Bug：
-
-```bash
-zentao bug list
-```
-
-只查询某个产品：
+Bug 列表必须指定产品 ID：
 
 ```bash
 zentao bug list --product 5
 ```
 
-如果指定的产品 ID 不存在，或当前账号不可见，CLI 会报错而不是使用禅道接口的默认回退结果。
-
 查询分配给某个账号的 Bug：
 
 ```bash
-zentao bug list --assigned-to alice
-```
-
-如果你的禅道 API 支持 `me` 作为当前用户，也可以尝试：
-
-```bash
-zentao bug list --assigned-to me
+zentao bug list --product 5 --assigned-to alice
 ```
 
 按状态筛选：
 
 ```bash
-zentao bug list --status active
+zentao bug list --product 5 --status active
 ```
 
 查看 Bug 详情：
 
 ```bash
 zentao bug view 456
-```
-
-## 需求命令
-
-查询需求。未指定产品时，CLI 会先读取你有权限访问的产品列表，再逐个查询产品下的需求：
-
-```bash
-zentao story list
-```
-
-按产品 ID 筛选：
-
-```bash
-zentao story list --product 3
+zentao bug view 456 --json
 ```
 
 如果指定的产品 ID 不存在，或当前账号不可见，CLI 会报错而不是使用禅道接口的默认回退结果。
 
+## 需求命令
+
+需求列表必须指定产品 ID：
+
+```bash
+zentao story list --product 5
+```
+
 按状态筛选：
 
 ```bash
-zentao story list --status active
+zentao story list --product 5 --status active
 ```
 
 查看需求详情：
 
 ```bash
 zentao story view 789
+zentao story view 789 --json
 ```
+
+如果指定的产品 ID 不存在，或当前账号不可见，CLI 会报错而不是使用禅道接口的默认回退结果。
 
 ## JSON 输出
 
-所有查询类命令支持 `--json`，适合自动化脚本。
-
-示例：
+查询类命令支持 `--json`，适合自动化脚本。
 
 ```bash
-zentao task list --mine --json
+zentao product list --json
+zentao task list --execution 303 --mine --json
 zentao task view 123 --json
-zentao bug list --assigned-to alice --json
-zentao story list --product 3 --json
+zentao bug list --product 5 --assigned-to alice --json
+zentao story list --product 5 --json
 ```
 
 成功输出结构：
@@ -258,16 +228,16 @@ zentao story list --product 3 --json
 }
 ```
 
-PowerShell 中可以这样保存结果：
+PowerShell 中保存结果：
 
 ```powershell
-zentao task list --mine --json > tasks.json
+zentao task list --execution 303 --mine --json > tasks.json
 ```
 
-配合 `jq` 时：
+配合 `jq`：
 
 ```bash
-zentao task list --mine --json | jq ".data[] | {id, name, status}"
+zentao bug list --product 5 --json | jq ".data[] | {id, title, status}"
 ```
 
 ## 常见工作流
@@ -275,8 +245,9 @@ zentao task list --mine --json | jq ".data[] | {id, name, status}"
 每天开始工作：
 
 ```bash
-zentao task list --mine
-zentao bug list --assigned-to alice --status active
+zentao product list
+zentao task list --execution 303 --mine
+zentao bug list --product 5 --assigned-to alice --status active
 ```
 
 开始处理任务：
@@ -292,10 +263,12 @@ zentao task comment 123 "开始处理"
 zentao task finish 123 --comment "已提交并自测通过"
 ```
 
-生成脚本输入：
+导出脚本输入：
 
 ```bash
-zentao task list --mine --json > my-tasks.json
+zentao product list --json > products.json
+zentao task list --execution 303 --mine --json > tasks.json
+zentao story list --product 5 --json > stories.json
 ```
 
 ## 手动 Smoke Test
@@ -303,29 +276,20 @@ zentao task list --mine --json > my-tasks.json
 连接真实禅道开源版 21.7.5 后，建议按顺序验证：
 
 ```bash
-zentao login
-zentao whoami
 zentao product list
 zentao product view 5 --json
-zentao bug list --json
 zentao bug list --product 5 --json
 zentao story list --product 5 --json
-zentao task list --mine
-zentao task list --mine --json
+zentao task list --execution 303 --json
 ```
 
-如果 `task list --mine` 返回权限或上下文错误，说明该禅道实例要求任务按项目或执行上下文查询，需要再针对当前部署补任务接口适配。
+如果 `task list --execution 303` 返回权限或上下文错误，请确认该执行 ID 对当前账号可见。
 
-如果列表命令可用，再验证写操作：
+验证写操作前，请先使用测试任务：
 
 ```bash
 zentao task update 123 --status doing
 zentao task comment 123 "CLI smoke test"
-```
-
-确认无误后，再尝试：
-
-```bash
 zentao task finish 123 --comment "CLI smoke test done"
 ```
 
@@ -348,15 +312,16 @@ pytest -v
 项目结构：
 
 ```text
-src/zentao_cli/
+zentao_cli/
   main.py              # Typer 入口
-  config.py            # 本地配置读写
-  auth.py              # 登录和 profile 加载
+  config.py            # 本地配置和 .env 读取
+  auth.py              # 登录、自动登录和 profile 加载
   client.py            # Zentao API v1 HTTP client
-  models.py            # Task/Bug/Story 等归一化模型
+  models.py            # Product/Task/Bug/Story 等归一化模型
   formatters.py        # JSON 输出和表格辅助
   errors.py            # 用户可见异常
   commands/
+    product.py
     task.py
     bug.py
     story.py
@@ -365,9 +330,8 @@ src/zentao_cli/
 ## 当前限制
 
 - 只面向禅道开源版 21.7.5 的 API v1。
-- 产品目前只支持只读查询。
-- Bug 和需求目前只支持只读查询。
-- 当前没有 `logout`、多 profile、环境变量覆盖和 keyring 存储。
-- Bug 和需求列表基于产品上下文查询；不传 `--product` 时会聚合所有可见产品的第一页结果。
-- 任务列表接口在不同禅道部署中可能需要项目或执行上下文，若 `/tasks` 不可用，需要在 `src/zentao_cli/client.py` 中继续适配。
+- 产品、Bug 和需求目前只支持只读查询。
+- Bug 和需求列表必须传 `--product`。
+- 任务列表必须传 `--execution`。
+- 当前没有 `logout`、多 profile 和 keyring 存储。
 - `task update/comment/finish` 会直接修改禅道数据，请先在测试任务上验证。

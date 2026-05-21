@@ -16,17 +16,24 @@ def test_task_list_json(mocker):
     ]
     mocker.patch("zentao_cli.commands.task.client_from_profile", return_value=client)
 
-    result = runner.invoke(app, ["task", "list", "--mine", "--json"])
+    result = runner.invoke(app, ["task", "list", "--execution", "303", "--mine", "--json"])
 
     assert result.exit_code == 0
     assert json.loads(result.stdout)["data"][0]["name"] == "Fix login"
-    client.list_tasks.assert_called_once_with(mine=True, status=None, project=None)
+    client.list_tasks.assert_called_once_with(execution=303, mine=True, status=None)
+
+
+def test_task_list_requires_execution():
+    result = runner.invoke(app, ["task", "list", "--json"])
+
+    assert result.exit_code == 2
+    assert "execution" in result.stderr.lower()
 
 
 def test_task_list_json_auth_error(mocker):
     mocker.patch("zentao_cli.commands.task.client_from_profile", side_effect=AuthError("not logged in"))
 
-    result = runner.invoke(app, ["task", "list", "--json"])
+    result = runner.invoke(app, ["task", "list", "--execution", "303", "--json"])
 
     assert result.exit_code == 1
     assert json.loads(result.stdout)["error"]["type"] == "AuthError"

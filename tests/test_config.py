@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from zentao_cli.config import Profile, load_profile, save_profile
+from zentao_cli.config import Profile, load_profile, load_project_env, save_profile
 
 
 def test_save_and_load_default_profile(tmp_path: Path):
@@ -20,3 +20,26 @@ def test_save_and_load_default_profile(tmp_path: Path):
 
 def test_load_missing_profile_returns_none(tmp_path: Path):
     assert load_profile(path=tmp_path / "missing.toml") is None
+
+
+def test_load_project_env_reads_simple_key_values(tmp_path: Path):
+    path = tmp_path / ".env"
+    path.write_text(
+        "\n".join(
+            [
+                "ZENTAO_URL=https://zentao.example.com",
+                "ZENTAO_USERNAME=alice",
+                'ZENTAO_PASSWORD="secret"',
+                "# ignored comment",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    values = load_project_env(path=path)
+
+    assert values == {
+        "ZENTAO_URL": "https://zentao.example.com",
+        "ZENTAO_USERNAME": "alice",
+        "ZENTAO_PASSWORD": "secret",
+    }

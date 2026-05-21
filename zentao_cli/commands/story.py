@@ -27,7 +27,7 @@ def _story_table(stories: list[Story]) -> Table:
 
 @app.command("list")
 def list_stories(
-    product: int | None = typer.Option(None, "--product"),
+    product: int = typer.Option(..., "--product", help="Product ID."),
     status: str | None = typer.Option(None, "--status"),
     as_json: bool = typer.Option(False, "--json", help="Output JSON."),
 ) -> None:

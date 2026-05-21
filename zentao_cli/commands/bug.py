@@ -27,7 +27,7 @@ def _bug_table(bugs: list[Bug]) -> Table:
 
 @app.command("list")
 def list_bugs(
-    product: int | None = typer.Option(None, "--product", help="Filter by product ID."),
+    product: int = typer.Option(..., "--product", help="Product ID."),
     assigned_to: str | None = typer.Option(None, "--assigned-to"),
     status: str | None = typer.Option(None, "--status"),
     as_json: bool = typer.Option(False, "--json", help="Output JSON."),

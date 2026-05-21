@@ -37,14 +37,14 @@ def _task_table(tasks: list[Task]) -> Table:
 
 @app.command("list")
 def list_tasks(
+    execution: int = typer.Option(..., "--execution", help="Execution ID."),
     mine: bool = typer.Option(False, "--mine", help="Only show tasks assigned to current user."),
     status: str | None = typer.Option(None, "--status", help="Filter by task status."),
-    project: int | None = typer.Option(None, "--project", help="Filter by project ID."),
     as_json: bool = typer.Option(False, "--json", help="Output JSON."),
 ) -> None:
     try:
         client = client_from_profile()
-        tasks = client.list_tasks(mine=mine, status=status, project=project)
+        tasks = client.list_tasks(execution=execution, mine=mine, status=status)
     except ZentaoCliError as exc:
         if as_json:
             typer.echo(error_payload(exc))

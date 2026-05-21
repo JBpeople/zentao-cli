@@ -92,15 +92,13 @@ class ZentaoClient:
         data = self._request("GET", f"products/{product_id}")
         return Product.from_api(data.get("product") or data.get("data") or data)
 
-    def list_tasks(self, mine: bool = False, status: str | None = None, project: int | None = None) -> list[Task]:
+    def list_tasks(self, execution: int, mine: bool = False, status: str | None = None) -> list[Task]:
         params: dict[str, Any] = {}
         if mine:
             params["mine"] = 1
         if status:
             params["status"] = status
-        if project is not None:
-            params["project"] = project
-        data = self._request("GET", "tasks", params=params)
+        data = self._request("GET", f"executions/{execution}/tasks", params=params)
         raw_tasks = data.get("tasks") or data.get("data") or []
         return [Task.from_api(item) for item in raw_tasks]
 
