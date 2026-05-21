@@ -1,0 +1,77 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+
+@dataclass(frozen=True)
+class Session:
+    session_name: str
+    session_id: str
+
+
+@dataclass(frozen=True)
+class User:
+    account: str
+    realname: str = ""
+
+
+@dataclass(frozen=True)
+class Task:
+    id: int
+    name: str
+    project: str = ""
+    status: str = ""
+    priority: str = ""
+    deadline: str = ""
+    assigned_to: str = ""
+
+    @classmethod
+    def from_api(cls, payload: dict[str, Any]) -> Task:
+        return cls(
+            id=int(payload.get("id", 0)),
+            name=str(payload.get("name", "")),
+            project=str(payload.get("projectName") or payload.get("project") or ""),
+            status=str(payload.get("status", "")),
+            priority=str(payload.get("pri") or payload.get("priority") or ""),
+            deadline=str(payload.get("deadline", "")),
+            assigned_to=str(payload.get("assignedTo") or payload.get("assigned_to") or ""),
+        )
+
+
+@dataclass(frozen=True)
+class Bug:
+    id: int
+    title: str
+    status: str = ""
+    severity: str = ""
+    assigned_to: str = ""
+
+    @classmethod
+    def from_api(cls, payload: dict[str, Any]) -> Bug:
+        return cls(
+            id=int(payload.get("id", 0)),
+            title=str(payload.get("title", "")),
+            status=str(payload.get("status", "")),
+            severity=str(payload.get("severity", "")),
+            assigned_to=str(payload.get("assignedTo") or payload.get("assigned_to") or ""),
+        )
+
+
+@dataclass(frozen=True)
+class Story:
+    id: int
+    title: str
+    status: str = ""
+    stage: str = ""
+    product: str = ""
+
+    @classmethod
+    def from_api(cls, payload: dict[str, Any]) -> Story:
+        return cls(
+            id=int(payload.get("id", 0)),
+            title=str(payload.get("title", "")),
+            status=str(payload.get("status", "")),
+            stage=str(payload.get("stage", "")),
+            product=str(payload.get("productName") or payload.get("product") or ""),
+        )
