@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx
 
-from zentao_cli.errors import ApiError, NetworkError
+from zentao_cli.errors import ApiError, NetworkError, NotFoundError
 from zentao_cli.models import Bug, Session, Story, Task
 
 
@@ -74,6 +74,14 @@ class ZentaoClient:
                 product_ids.append(int(product_id))
         return product_ids
 
+    def _product_scope(self, product: int | None) -> list[int]:
+        product_ids = self._product_ids()
+        if product is None:
+            return product_ids
+        if product not in product_ids:
+            raise NotFoundError(f"Product {product} was not found or is not visible")
+        return [product]
+
     def login(self, username: str, password: str) -> Session:
         data = self._request("POST", "tokens", json={"account": username, "password": password})
         session_id = str(data.get("token") or data.get("sessionID") or data.get("session_id") or "")
@@ -120,7 +128,7 @@ class ZentaoClient:
     ) -> list[Bug]:
         params = {"assignedTo": assigned_to, "status": status}
         clean_params = {key: value for key, value in params.items() if value}
-        products = [product] if product is not None else self._product_ids()
+        products = self._product_scope(product)
         bugs: list[Bug] = []
         for product_id in products:
             data = self._request("GET", f"products/{product_id}/bugs", params=clean_params)
@@ -136,7 +144,7 @@ class ZentaoClient:
         params: dict[str, Any] = {}
         if status:
             params["status"] = status
-        products = [product] if product is not None else self._product_ids()
+        products = self._product_scope(product)
         stories: list[Story] = []
         for product_id in products:
             data = self._request("GET", f"products/{product_id}/stories", params=params)

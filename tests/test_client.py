@@ -2,7 +2,7 @@ import httpx
 import respx
 
 from zentao_cli.client import ZentaoClient
-from zentao_cli.errors import ApiError
+from zentao_cli.errors import ApiError, NotFoundError
 from zentao_cli.models import Task
 
 
@@ -56,6 +56,9 @@ def test_http_error_uses_api_error_message():
 
 @respx.mock
 def test_list_bugs_uses_product_scope_when_product_is_provided():
+    respx.get("https://zentao.example.com/api.php/v1/products").mock(
+        return_value=httpx.Response(200, json={"products": [{"id": 5}]})
+    )
     route = respx.get("https://zentao.example.com/api.php/v1/products/5/bugs").mock(
         return_value=httpx.Response(
             200,
@@ -69,6 +72,22 @@ def test_list_bugs_uses_product_scope_when_product_is_provided():
     assert route.called
     assert bugs[0].id == 7
     assert bugs[0].title == "Crash"
+
+
+@respx.mock
+def test_list_bugs_rejects_unknown_product_before_querying_bugs():
+    respx.get("https://zentao.example.com/api.php/v1/products").mock(
+        return_value=httpx.Response(200, json={"products": [{"id": 5}]})
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+
+    try:
+        client.list_bugs(product=1000)
+    except NotFoundError as exc:
+        assert str(exc) == "Product 1000 was not found or is not visible"
+    else:
+        raise AssertionError("Expected NotFoundError")
 
 
 @respx.mock
@@ -91,6 +110,9 @@ def test_list_bugs_aggregates_all_products_when_product_is_not_provided():
 
 @respx.mock
 def test_list_stories_uses_product_scope_when_product_is_provided():
+    respx.get("https://zentao.example.com/api.php/v1/products").mock(
+        return_value=httpx.Response(200, json={"products": [{"id": 5}]})
+    )
     route = respx.get("https://zentao.example.com/api.php/v1/products/5/stories").mock(
         return_value=httpx.Response(
             201,
@@ -104,3 +126,19 @@ def test_list_stories_uses_product_scope_when_product_is_provided():
     assert route.called
     assert stories[0].id == 9
     assert stories[0].title == "Login story"
+
+
+@respx.mock
+def test_list_stories_rejects_unknown_product_before_querying_stories():
+    respx.get("https://zentao.example.com/api.php/v1/products").mock(
+        return_value=httpx.Response(200, json={"products": [{"id": 5}]})
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+
+    try:
+        client.list_stories(product=1000)
+    except NotFoundError as exc:
+        assert str(exc) == "Product 1000 was not found or is not visible"
+    else:
+        raise AssertionError("Expected NotFoundError")

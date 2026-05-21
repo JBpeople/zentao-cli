@@ -138,6 +138,8 @@ zentao bug list
 zentao bug list --product 5
 ```
 
+如果指定的产品 ID 不存在，或当前账号不可见，CLI 会报错而不是使用禅道接口的默认回退结果。
+
 查询分配给某个账号的 Bug：
 
 ```bash
@@ -175,6 +177,8 @@ zentao story list
 ```bash
 zentao story list --product 3
 ```
+
+如果指定的产品 ID 不存在，或当前账号不可见，CLI 会报错而不是使用禅道接口的默认回退结果。
 
 按状态筛选：
 
