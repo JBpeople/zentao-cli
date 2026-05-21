@@ -6,6 +6,7 @@
 
 - 交互式登录：`zentao login`
 - 当前账号查看：`zentao whoami`
+- 产品只读：查询、查看
 - 任务处理：查询、查看、更新状态、评论、完成
 - Bug 只读：查询、查看
 - 需求只读：查询、查看
@@ -76,6 +77,37 @@ base_url = "https://zentao.example.com"
 username = "alice"
 session_name = "zentaosid"
 session_id = "..."
+```
+
+## 任务命令
+
+## 产品命令
+
+查看当前账号可见的产品列表：
+
+```bash
+zentao product list
+```
+
+输出 JSON：
+
+```bash
+zentao product list --json
+```
+
+查看产品详情：
+
+```bash
+zentao product view 5
+zentao product view 5 --json
+```
+
+建议先用 `product list` 找到产品 ID，再查询该产品下的 Bug 或需求：
+
+```bash
+zentao product list
+zentao bug list --product 5
+zentao story list --product 5
 ```
 
 ## 任务命令
@@ -273,6 +305,8 @@ zentao task list --mine --json > my-tasks.json
 ```bash
 zentao login
 zentao whoami
+zentao product list
+zentao product view 5 --json
 zentao bug list --json
 zentao bug list --product 5 --json
 zentao story list --product 5 --json
@@ -331,6 +365,7 @@ src/zentao_cli/
 ## 当前限制
 
 - 只面向禅道开源版 21.7.5 的 API v1。
+- 产品目前只支持只读查询。
 - Bug 和需求目前只支持只读查询。
 - 当前没有 `logout`、多 profile、环境变量覆盖和 keyring 存储。
 - Bug 和需求列表基于产品上下文查询；不传 `--product` 时会聚合所有可见产品的第一页结果。

@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 
 from zentao_cli.errors import ApiError, NetworkError, NotFoundError
-from zentao_cli.models import Bug, Session, Story, Task
+from zentao_cli.models import Bug, Product, Session, Story, Task
 
 
 class ZentaoClient:
@@ -65,14 +65,7 @@ class ZentaoClient:
         return f"Zentao API returned HTTP {response.status_code}"
 
     def _product_ids(self) -> list[int]:
-        data = self._request("GET", "products")
-        products = data.get("products") or data.get("data") or []
-        product_ids: list[int] = []
-        for product in products:
-            product_id = product.get("id")
-            if product_id is not None:
-                product_ids.append(int(product_id))
-        return product_ids
+        return [product.id for product in self.list_products()]
 
     def _product_scope(self, product: int | None) -> list[int]:
         product_ids = self._product_ids()
@@ -89,6 +82,15 @@ class ZentaoClient:
         if not session_id:
             raise ApiError("Zentao login response did not include a session token")
         return Session(session_name=session_name, session_id=session_id)
+
+    def list_products(self) -> list[Product]:
+        data = self._request("GET", "products")
+        raw_products = data.get("products") or data.get("data") or []
+        return [Product.from_api(item) for item in raw_products]
+
+    def get_product(self, product_id: int) -> Product:
+        data = self._request("GET", f"products/{product_id}")
+        return Product.from_api(data.get("product") or data.get("data") or data)
 
     def list_tasks(self, mine: bool = False, status: str | None = None, project: int | None = None) -> list[Task]:
         params: dict[str, Any] = {}

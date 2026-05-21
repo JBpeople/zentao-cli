@@ -3,7 +3,7 @@ import respx
 
 from zentao_cli.client import ZentaoClient
 from zentao_cli.errors import ApiError, NotFoundError
-from zentao_cli.models import Task
+from zentao_cli.models import Product, Task
 
 
 @respx.mock
@@ -36,6 +36,50 @@ def test_list_tasks_returns_normalized_tasks():
     tasks = client.list_tasks(mine=True)
 
     assert tasks == [Task(id=1, name="Fix login", status="doing")]
+
+
+@respx.mock
+def test_list_products_returns_normalized_products():
+    route = respx.get("https://zentao.example.com/api.php/v1/products").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "products": [
+                    {
+                        "id": 5,
+                        "name": "Platform",
+                        "code": "PLAT",
+                        "status": "normal",
+                        "type": "product",
+                        "PO": {"account": "alice"},
+                    }
+                ]
+            },
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    products = client.list_products()
+
+    assert route.called
+    assert products == [Product(id=5, name="Platform", code="PLAT", status="normal", type="product", owner="alice")]
+
+
+@respx.mock
+def test_get_product_returns_normalized_product():
+    respx.get("https://zentao.example.com/api.php/v1/products/5").mock(
+        return_value=httpx.Response(
+            200,
+            json={"id": 5, "name": "Platform", "status": "normal", "PO": {"account": "alice"}},
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    product = client.get_product(5)
+
+    assert product.id == 5
+    assert product.name == "Platform"
+    assert product.owner == "alice"
 
 
 @respx.mock

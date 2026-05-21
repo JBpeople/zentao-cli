@@ -23,6 +23,27 @@ class User:
 
 
 @dataclass(frozen=True)
+class Product:
+    id: int
+    name: str
+    code: str = ""
+    status: str = ""
+    type: str = ""
+    owner: str = ""
+
+    @classmethod
+    def from_api(cls, payload: dict[str, Any]) -> Product:
+        return cls(
+            id=int(payload.get("id", 0)),
+            name=str(payload.get("name", "")),
+            code=str(payload.get("code", "")),
+            status=str(payload.get("status", "")),
+            type=str(payload.get("type", "")),
+            owner=_user_name(payload.get("PO") or payload.get("owner")),
+        )
+
+
+@dataclass(frozen=True)
 class Task:
     id: int
     name: str
