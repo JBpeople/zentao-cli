@@ -4,10 +4,12 @@ import typer
 
 from zentao_cli import __version__
 from zentao_cli.auth import login_interactive, require_profile
-from zentao_cli.commands import bug, product, story, task
+from zentao_cli.commands import bug, execution, product, project, story, task
 
 app = typer.Typer(help="CLI for Zentao Open Source Edition 21.7.5.")
 app.add_typer(product.app, name="product")
+app.add_typer(project.app, name="project")
+app.add_typer(execution.app, name="execution")
 app.add_typer(task.app, name="task")
 app.add_typer(bug.app, name="bug")
 app.add_typer(story.app, name="story")
