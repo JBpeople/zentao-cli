@@ -4,7 +4,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from zentao_cli.auth import client_from_profile
+from zentao_cli.auth import client_from_profile, current_username
 from zentao_cli.errors import ZentaoCliError
 from zentao_cli.formatters import error_payload, json_payload
 from zentao_cli.models import Story
@@ -37,6 +37,7 @@ def list_stories(
     product: int | None = typer.Option(None, "--product", help="Product ID."),
     execution: int | None = typer.Option(None, "--execution", help="Execution ID."),
     status: str | None = typer.Option(None, "--status"),
+    opened_by: str | None = typer.Option(None, "--opened-by", help="Only show stories opened by account, or me."),
     page: int = typer.Option(1, "--page", min=1, help="Page number."),
     page_size: int = typer.Option(100, "--page-size", min=1, max=1000, help="Records per page."),
     fetch_all: bool = typer.Option(False, "--all", help="Fetch all pages."),
@@ -47,22 +48,18 @@ def list_stories(
 
     try:
         client = client_from_profile()
+        kwargs = {
+            "status": status,
+            "page": page,
+            "page_size": page_size,
+            "fetch_all": fetch_all,
+        }
+        if opened_by:
+            kwargs["opened_by"] = current_username() if opened_by.lower() == "me" else opened_by
         if product is not None:
-            stories = client.list_stories(
-                product=product,
-                status=status,
-                page=page,
-                page_size=page_size,
-                fetch_all=fetch_all,
-            )
+            stories = client.list_stories(product=product, **kwargs)
         else:
-            stories = client.list_stories(
-                execution=execution,
-                status=status,
-                page=page,
-                page_size=page_size,
-                fetch_all=fetch_all,
-            )
+            stories = client.list_stories(execution=execution, **kwargs)
     except ZentaoCliError as exc:
         if as_json:
             typer.echo(error_payload(exc))

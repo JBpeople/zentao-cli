@@ -4,7 +4,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from zentao_cli.auth import client_from_profile
+from zentao_cli.auth import client_from_profile, current_username
 from zentao_cli.errors import ZentaoCliError
 from zentao_cli.formatters import error_payload, json_payload
 from zentao_cli.models import Bug
@@ -29,6 +29,7 @@ def _bug_table(bugs: list[Bug]) -> Table:
 def list_bugs(
     execution: int = typer.Option(..., "--execution", help="Execution ID."),
     assigned_to: str | None = typer.Option(None, "--assigned-to"),
+    opened_by: str | None = typer.Option(None, "--opened-by", help="Only show bugs opened by account, or me."),
     status: str | None = typer.Option(None, "--status"),
     page: int = typer.Option(1, "--page", min=1, help="Page number."),
     page_size: int = typer.Option(100, "--page-size", min=1, max=1000, help="Records per page."),
@@ -37,14 +38,17 @@ def list_bugs(
 ) -> None:
     try:
         client = client_from_profile()
-        bugs = client.list_bugs(
-            execution=execution,
-            assigned_to=assigned_to,
-            status=status,
-            page=page,
-            page_size=page_size,
-            fetch_all=fetch_all,
-        )
+        kwargs = {
+            "execution": execution,
+            "assigned_to": assigned_to,
+            "status": status,
+            "page": page,
+            "page_size": page_size,
+            "fetch_all": fetch_all,
+        }
+        if opened_by:
+            kwargs["opened_by"] = current_username() if opened_by.lower() == "me" else opened_by
+        bugs = client.list_bugs(**kwargs)
     except ZentaoCliError as exc:
         if as_json:
             typer.echo(error_payload(exc))

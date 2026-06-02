@@ -28,6 +28,27 @@ def test_bug_list_json(mocker):
     )
 
 
+def test_bug_list_filters_by_current_user_as_opened_by(mocker):
+    client = mocker.Mock()
+    client.list_bugs.return_value = [Bug(id=5, title="Crash", status="active", assigned_to="alice")]
+    mocker.patch("zentao_cli.commands.bug.client_from_profile", return_value=client)
+    mocker.patch("zentao_cli.commands.bug.current_username", return_value="alice")
+
+    result = runner.invoke(app, ["bug", "list", "--execution", "303", "--opened-by", "me", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["data"][0]["title"] == "Crash"
+    client.list_bugs.assert_called_once_with(
+        execution=303,
+        assigned_to=None,
+        status=None,
+        page=1,
+        page_size=100,
+        fetch_all=False,
+        opened_by="alice",
+    )
+
+
 def test_bug_list_passes_pagination_options(mocker):
     client = mocker.Mock()
     client.list_bugs.return_value = [Bug(id=5, title="Crash", status="active", assigned_to="alice")]
@@ -66,6 +87,26 @@ def test_story_list_json(mocker):
     assert result.exit_code == 0
     assert json.loads(result.stdout)["data"][0]["title"] == "Login story"
     client.list_stories.assert_called_once_with(product=2, status=None, page=1, page_size=100, fetch_all=False)
+
+
+def test_story_list_filters_by_current_user_as_opened_by(mocker):
+    client = mocker.Mock()
+    client.list_stories.return_value = [Story(id=8, title="Login story", status="active")]
+    mocker.patch("zentao_cli.commands.story.client_from_profile", return_value=client)
+    mocker.patch("zentao_cli.commands.story.current_username", return_value="alice")
+
+    result = runner.invoke(app, ["story", "list", "--product", "2", "--opened-by", "me", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["data"][0]["title"] == "Login story"
+    client.list_stories.assert_called_once_with(
+        product=2,
+        status=None,
+        page=1,
+        page_size=100,
+        fetch_all=False,
+        opened_by="alice",
+    )
 
 
 def test_story_list_by_execution_json(mocker):

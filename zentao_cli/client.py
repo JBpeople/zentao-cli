@@ -283,6 +283,7 @@ class ZentaoClient:
         execution: int,
         mine: bool = False,
         status: str | None = None,
+        opened_by: str | None = None,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
         fetch_all: bool = False,
@@ -292,6 +293,8 @@ class ZentaoClient:
             params["mine"] = 1
         if status:
             params["status"] = status
+        if opened_by:
+            params["openedBy"] = opened_by
         raw_tasks = self._paged_request(
             f"executions/{execution}/tasks",
             "tasks",
@@ -300,7 +303,10 @@ class ZentaoClient:
             page_size=page_size,
             fetch_all=fetch_all,
         )
-        return [Task.from_api(item) for item in raw_tasks]
+        tasks = [Task.from_api(item) for item in raw_tasks]
+        if opened_by:
+            tasks = _filter_opened_by(tasks, opened_by)
+        return tasks
 
     def get_task(self, task_id: int) -> Task:
         data = self._request("GET", f"tasks/{task_id}")
@@ -366,11 +372,12 @@ class ZentaoClient:
         execution: int,
         assigned_to: str | None = None,
         status: str | None = None,
+        opened_by: str | None = None,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
         fetch_all: bool = False,
     ) -> list[Bug]:
-        params = {"assignedTo": assigned_to, "status": status}
+        params = {"assignedTo": assigned_to, "status": status, "openedBy": opened_by}
         clean_params = {key: value for key, value in params.items() if value}
         raw_bugs = self._paged_request(
             f"executions/{execution}/bugs",
@@ -380,7 +387,10 @@ class ZentaoClient:
             page_size=page_size,
             fetch_all=fetch_all,
         )
-        return [Bug.from_api(item) for item in raw_bugs]
+        bugs = [Bug.from_api(item) for item in raw_bugs]
+        if opened_by:
+            bugs = _filter_opened_by(bugs, opened_by)
+        return bugs
 
     def get_bug(self, bug_id: int) -> Bug:
         data = self._request("GET", f"bugs/{bug_id}")
@@ -475,6 +485,7 @@ class ZentaoClient:
         product: int | None = None,
         execution: int | None = None,
         status: str | None = None,
+        opened_by: str | None = None,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
         fetch_all: bool = False,
@@ -482,6 +493,8 @@ class ZentaoClient:
         params: dict[str, Any] = {}
         if status:
             params["status"] = status
+        if opened_by:
+            params["openedBy"] = opened_by
         if execution is not None:
             raw_stories = self._paged_request(
                 f"executions/{execution}/stories",
@@ -491,7 +504,10 @@ class ZentaoClient:
                 page_size=page_size,
                 fetch_all=fetch_all,
             )
-            return [Story.from_api(item) for item in raw_stories]
+            stories = [Story.from_api(item) for item in raw_stories]
+            if opened_by:
+                stories = _filter_opened_by(stories, opened_by)
+            return stories
         products = self._product_scope(product)
         stories: list[Story] = []
         for product_id in products:
@@ -503,7 +519,10 @@ class ZentaoClient:
                 page_size=page_size,
                 fetch_all=fetch_all,
             )
-            stories.extend(Story.from_api(item) for item in raw_stories)
+            product_stories = [Story.from_api(item) for item in raw_stories]
+            if opened_by:
+                product_stories = _filter_opened_by(product_stories, opened_by)
+            stories.extend(product_stories)
         return stories
 
     def get_story(self, story_id: int) -> Story:
@@ -709,3 +728,7 @@ def _id_from_payload(payload: dict[str, Any], *keys: str) -> int | None:
             if nested_id is not None:
                 return nested_id
     return None
+
+
+def _filter_opened_by(items: list[Any], opened_by: str) -> list[Any]:
+    return [item for item in items if getattr(item, "opened_by", "") == opened_by]

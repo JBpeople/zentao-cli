@@ -30,6 +30,29 @@ def test_task_list_json(mocker):
     )
 
 
+def test_task_list_filters_by_current_user_as_opened_by(mocker):
+    client = mocker.Mock()
+    client.list_tasks.return_value = [
+        Task(id=1, name="Spec import", status="wait", priority="3", assigned_to="alice")
+    ]
+    mocker.patch("zentao_cli.commands.task.client_from_profile", return_value=client)
+    mocker.patch("zentao_cli.commands.task.current_username", return_value="alice")
+
+    result = runner.invoke(app, ["task", "list", "--execution", "303", "--opened-by", "me", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["data"][0]["name"] == "Spec import"
+    client.list_tasks.assert_called_once_with(
+        execution=303,
+        mine=False,
+        status=None,
+        page=1,
+        page_size=100,
+        fetch_all=False,
+        opened_by="alice",
+    )
+
+
 def test_task_list_passes_pagination_options(mocker):
     client = mocker.Mock()
     client.list_tasks.return_value = [

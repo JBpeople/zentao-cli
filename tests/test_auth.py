@@ -1,4 +1,4 @@
-from zentao_cli.auth import client_from_profile
+from zentao_cli.auth import client_from_profile, current_username
 from zentao_cli.config import Profile
 from zentao_cli.models import Session
 
@@ -30,3 +30,29 @@ def test_client_from_profile_uses_env_credentials_before_saved_profile(mocker):
         session_id="fresh-token",
     )
     assert client is client_cls.return_value
+
+
+def test_current_username_uses_env_credentials_first(mocker):
+    mocker.patch(
+        "zentao_cli.auth.env_credentials",
+        return_value=("https://zentao.example.com", "alice", "secret"),
+    )
+    require_profile = mocker.patch("zentao_cli.auth.require_profile")
+
+    assert current_username() == "alice"
+    require_profile.assert_not_called()
+
+
+def test_current_username_uses_saved_profile_without_env(mocker):
+    mocker.patch("zentao_cli.auth.env_credentials", return_value=None)
+    mocker.patch(
+        "zentao_cli.auth.require_profile",
+        return_value=Profile(
+            base_url="https://zentao.example.com",
+            username="bob",
+            session_name="zentaosid",
+            session_id="saved-token",
+        ),
+    )
+
+    assert current_username() == "bob"

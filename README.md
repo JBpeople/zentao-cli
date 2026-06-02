@@ -153,7 +153,11 @@ zentao execution link-story 303 --story 789 --json
 
 ```bash
 zentao task list --execution 303 --mine
+zentao task list --execution 303 --opened-by me
+zentao task list --execution 303 --opened-by alice
 ```
+
+`--opened-by` 会按禅道返回的 `openedBy` 字段在本地再次过滤；如果要完整统计跨页结果，请同时使用 `--all`。
 
 按状态筛选：
 
@@ -211,7 +215,11 @@ zentao bug list --execution 303
 
 ```bash
 zentao bug list --execution 303 --assigned-to alice
+zentao bug list --execution 303 --opened-by me
+zentao bug list --execution 303 --opened-by alice
 ```
+
+`--opened-by` 会按禅道返回的 `openedBy` 字段在本地再次过滤；如果要完整统计跨页结果，请同时使用 `--all`。
 
 按状态筛选：
 
@@ -251,7 +259,11 @@ zentao story list --execution 303
 ```bash
 zentao story list --product 5 --status active
 zentao story list --execution 303 --status active
+zentao story list --product 5 --opened-by me
+zentao story list --execution 303 --opened-by alice
 ```
+
+`--opened-by` 会按禅道返回的 `openedBy` 字段在本地再次过滤；如果要完整统计跨页结果，请同时使用 `--all`。
 
 查看需求详情：
 
@@ -304,10 +316,13 @@ zentao product list --json
 zentao project list --json
 zentao execution list --project 12 --json
 zentao task list --execution 303 --mine --json
+zentao task list --execution 303 --opened-by me --json
 zentao task view 123 --json
 zentao bug list --execution 303 --assigned-to alice --json
+zentao bug list --execution 303 --opened-by me --json
 zentao story list --product 5 --json
 zentao story list --execution 303 --json
+zentao story list --execution 303 --opened-by me --json
 zentao story create --product 5 --title "支持批量导入客户" --spec "需求描述" --json
 zentao story create --execution 303 --title "支持批量导入客户" --spec "需求描述" --json
 zentao story change 789 --title "新标题" --spec "新描述" --json

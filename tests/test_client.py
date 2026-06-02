@@ -5,7 +5,7 @@ import respx
 
 from zentao_cli.client import ZentaoClient
 from zentao_cli.errors import ApiError, NotFoundError
-from zentao_cli.models import Execution, Product, Project, Story, Task
+from zentao_cli.models import Bug, Execution, Product, Project, Story, Task
 
 
 @respx.mock
@@ -39,6 +39,43 @@ def test_list_tasks_returns_normalized_tasks():
 
     assert route.called
     assert tasks == [Task(id=1, name="Fix login", status="doing")]
+
+
+@respx.mock
+def test_list_tasks_passes_opened_by_filter():
+    route = respx.get("https://zentao.example.com/api.php/v1/executions/303/tasks").mock(
+        return_value=httpx.Response(
+            200,
+            json={"tasks": [{"id": 1, "name": "Spec import", "status": "wait", "openedBy": {"account": "alice"}}]},
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_name="zentaosid", session_id="abc123")
+    tasks = client.list_tasks(execution=303, opened_by="alice")
+
+    assert route.called
+    assert route.calls.last.request.url.params["openedBy"] == "alice"
+    assert tasks == [Task(id=1, name="Spec import", status="wait", opened_by="alice")]
+
+
+@respx.mock
+def test_list_tasks_filters_opened_by_from_response():
+    respx.get("https://zentao.example.com/api.php/v1/executions/303/tasks").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "tasks": [
+                    {"id": 1, "name": "Spec import", "status": "wait", "openedBy": {"account": "alice"}},
+                    {"id": 2, "name": "Build export", "status": "wait", "openedBy": {"account": "bob"}},
+                ]
+            },
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    tasks = client.list_tasks(execution=303, opened_by="alice")
+
+    assert tasks == [Task(id=1, name="Spec import", status="wait", opened_by="alice")]
 
 
 @respx.mock
@@ -489,6 +526,43 @@ def test_list_bugs_passes_filters_to_execution_scope():
 
 
 @respx.mock
+def test_list_bugs_passes_opened_by_filter():
+    route = respx.get("https://zentao.example.com/api.php/v1/executions/303/bugs").mock(
+        return_value=httpx.Response(
+            200,
+            json={"bugs": [{"id": 7, "title": "Crash", "openedBy": {"account": "alice"}}]},
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    bugs = client.list_bugs(execution=303, opened_by="alice")
+
+    assert route.called
+    assert route.calls.last.request.url.params["openedBy"] == "alice"
+    assert bugs[0].title == "Crash"
+
+
+@respx.mock
+def test_list_bugs_filters_opened_by_from_response():
+    respx.get("https://zentao.example.com/api.php/v1/executions/303/bugs").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "bugs": [
+                    {"id": 7, "title": "Crash", "openedBy": {"account": "alice"}},
+                    {"id": 8, "title": "UI bug", "openedBy": {"account": "bob"}},
+                ]
+            },
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    bugs = client.list_bugs(execution=303, opened_by="alice")
+
+    assert bugs == [Bug(id=7, title="Crash", opened_by="alice")]
+
+
+@respx.mock
 def test_list_bugs_fetch_all_pages_preserves_filters():
     respx.get(
         "https://zentao.example.com/api.php/v1/executions/303/bugs",
@@ -610,7 +684,7 @@ def test_list_stories_uses_product_scope_when_product_is_provided():
     route = respx.get("https://zentao.example.com/api.php/v1/products/5/stories").mock(
         return_value=httpx.Response(
             201,
-            json={"stories": [{"id": 9, "title": "Login story", "status": "active"}]},
+            json={"stories": [{"id": 9, "title": "Login story", "status": "active", "openedBy": {"account": "alice"}}]},
         )
     )
 
@@ -627,7 +701,7 @@ def test_list_stories_uses_execution_scope_when_execution_is_provided():
     route = respx.get("https://zentao.example.com/api.php/v1/executions/303/stories").mock(
         return_value=httpx.Response(
             200,
-            json={"stories": [{"id": 9, "title": "Login story", "status": "active"}]},
+            json={"stories": [{"id": 9, "title": "Login story", "status": "active", "openedBy": {"account": "alice"}}]},
         )
     )
 
@@ -654,6 +728,43 @@ def test_list_stories_passes_status_to_execution_scope():
     assert route.called
     assert route.calls.last.request.url.params["status"] == "active"
     assert stories[0].status == "active"
+
+
+@respx.mock
+def test_list_stories_passes_opened_by_filter():
+    route = respx.get("https://zentao.example.com/api.php/v1/executions/303/stories").mock(
+        return_value=httpx.Response(
+            200,
+            json={"stories": [{"id": 9, "title": "Login story", "status": "active", "openedBy": {"account": "alice"}}]},
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    stories = client.list_stories(execution=303, opened_by="alice")
+
+    assert route.called
+    assert route.calls.last.request.url.params["openedBy"] == "alice"
+    assert stories[0].title == "Login story"
+
+
+@respx.mock
+def test_list_stories_filters_opened_by_from_response():
+    respx.get("https://zentao.example.com/api.php/v1/executions/303/stories").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "stories": [
+                    {"id": 9, "title": "Login story", "openedBy": {"account": "alice"}},
+                    {"id": 10, "title": "Import story", "openedBy": {"account": "bob"}},
+                ]
+            },
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    stories = client.list_stories(execution=303, opened_by="alice")
+
+    assert stories == [Story(id=9, title="Login story", opened_by="alice")]
 
 
 @respx.mock

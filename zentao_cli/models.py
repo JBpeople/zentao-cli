@@ -96,6 +96,7 @@ class Task:
     priority: str = ""
     deadline: str = ""
     assigned_to: str = ""
+    opened_by: str = ""
 
     @classmethod
     def from_api(cls, payload: dict[str, Any]) -> Task:
@@ -107,6 +108,7 @@ class Task:
             priority=str(payload.get("pri") or payload.get("priority") or ""),
             deadline=str(payload.get("deadline", "")),
             assigned_to=_user_name(payload.get("assignedTo") or payload.get("assigned_to")),
+            opened_by=_user_name(payload.get("openedBy") or payload.get("opened_by")),
         )
 
 
@@ -117,6 +119,7 @@ class Bug:
     status: str = ""
     severity: str = ""
     assigned_to: str = ""
+    opened_by: str = ""
 
     @classmethod
     def from_api(cls, payload: dict[str, Any]) -> Bug:
@@ -126,6 +129,7 @@ class Bug:
             status=str(payload.get("status", "")),
             severity=str(payload.get("severity", "")),
             assigned_to=_user_name(payload.get("assignedTo") or payload.get("assigned_to")),
+            opened_by=_user_name(payload.get("openedBy") or payload.get("opened_by")),
         )
 
 
@@ -139,6 +143,7 @@ class Story:
     priority: str = ""
     category: str = ""
     type: str = ""
+    opened_by: str = ""
 
     @classmethod
     def from_api(cls, payload: dict[str, Any]) -> Story:
@@ -151,4 +156,5 @@ class Story:
             priority=str(payload.get("pri") or payload.get("priority") or ""),
             category=str(payload.get("category", "")),
             type=str(payload.get("type", "")),
+            opened_by=_user_name(payload.get("openedBy") or payload.get("opened_by")),
         )

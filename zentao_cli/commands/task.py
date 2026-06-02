@@ -4,7 +4,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from zentao_cli.auth import client_from_profile
+from zentao_cli.auth import client_from_profile, current_username
 from zentao_cli.errors import ZentaoCliError
 from zentao_cli.formatters import error_payload, json_payload
 from zentao_cli.models import Task
@@ -39,6 +39,7 @@ def _task_table(tasks: list[Task]) -> Table:
 def list_tasks(
     execution: int = typer.Option(..., "--execution", help="Execution ID."),
     mine: bool = typer.Option(False, "--mine", help="Only show tasks assigned to current user."),
+    opened_by: str | None = typer.Option(None, "--opened-by", help="Only show tasks opened by account, or me."),
     status: str | None = typer.Option(None, "--status", help="Filter by task status."),
     page: int = typer.Option(1, "--page", min=1, help="Page number."),
     page_size: int = typer.Option(100, "--page-size", min=1, max=1000, help="Records per page."),
@@ -47,14 +48,17 @@ def list_tasks(
 ) -> None:
     try:
         client = client_from_profile()
-        tasks = client.list_tasks(
-            execution=execution,
-            mine=mine,
-            status=status,
-            page=page,
-            page_size=page_size,
-            fetch_all=fetch_all,
-        )
+        kwargs = {
+            "execution": execution,
+            "mine": mine,
+            "status": status,
+            "page": page,
+            "page_size": page_size,
+            "fetch_all": fetch_all,
+        }
+        if opened_by:
+            kwargs["opened_by"] = current_username() if opened_by.lower() == "me" else opened_by
+        tasks = client.list_tasks(**kwargs)
     except ZentaoCliError as exc:
         if as_json:
             typer.echo(error_payload(exc))

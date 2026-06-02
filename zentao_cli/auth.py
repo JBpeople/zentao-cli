@@ -33,6 +33,13 @@ def require_profile() -> Profile:
     return profile
 
 
+def current_username() -> str:
+    credentials = env_credentials()
+    if credentials is not None:
+        return credentials[1]
+    return require_profile().username
+
+
 def client_from_profile() -> ZentaoClient:
     credentials = env_credentials()
     if credentials is not None:
