@@ -34,6 +34,16 @@ zentao task list --execution EXECUTION_ID --all --json
 zentao bug list --execution EXECUTION_ID --all --json
 ```
 
+To query records opened by the current account, use `--opened-by me`. This is supported for stories, tasks, and bugs:
+
+```bash
+zentao story list --execution EXECUTION_ID --opened-by me --all --json
+zentao task list --execution EXECUTION_ID --opened-by me --all --json
+zentao bug list --execution EXECUTION_ID --opened-by me --all --json
+```
+
+`--opened-by` is not only a server-side hint. The CLI also filters returned records by each item's `openedBy` field because some ZenTao list endpoints may ignore the query parameter. Always include `--all` when counting or auditing "my opened" records across pages; without `--all`, the CLI only filters the page it fetched.
+
 If results are incomplete, use pagination explicitly:
 
 ```bash
