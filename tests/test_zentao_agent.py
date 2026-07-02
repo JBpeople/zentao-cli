@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from zentao_cli.errors import AuthError
-from zentao_cli.models import Bug, Execution, Project
+from zentao_cli.models import Bug, Execution, Product, Project
 
 
 def test_list_bugs_returns_plain_dicts(mocker):
@@ -254,3 +254,102 @@ def test_root_agent_registers_bug_agent():
 
     assert bug_agent in root_agent.sub_agents
     assert root_agent.name == "root_agent"
+
+
+def test_product_agent_lists_products_as_plain_dicts(mocker):
+    from zentao_agent import product_agent
+
+    client = mocker.Mock()
+    client.list_products.return_value = [
+        Product(id=16, name="Factory Design", code="P00402", status="normal", type="normal", owner="alice")
+    ]
+    mocker.patch("zentao_agent.product_agent.client_from_profile", return_value=client)
+
+    result = product_agent.list_products(page=2, page_size=50, fetch_all=True)
+
+    client.list_products.assert_called_once_with(page=2, page_size=50, fetch_all=True)
+    assert result == {
+        "products": [
+            {
+                "id": 16,
+                "name": "Factory Design",
+                "code": "P00402",
+                "status": "normal",
+                "type": "normal",
+                "owner": "alice",
+            }
+        ]
+    }
+
+
+def test_product_agent_gets_product_as_plain_dict(mocker):
+    from zentao_agent import product_agent
+
+    client = mocker.Mock()
+    client.get_product.return_value = Product(id=16, name="Factory Design", status="normal")
+    mocker.patch("zentao_agent.product_agent.client_from_profile", return_value=client)
+
+    result = product_agent.get_product(16)
+
+    client.get_product.assert_called_once_with(16)
+    assert result["product"]["id"] == 16
+    assert result["product"]["name"] == "Factory Design"
+
+
+def test_execution_agent_lists_project_executions_as_plain_dicts(mocker):
+    from zentao_agent import execution_agent
+
+    client = mocker.Mock()
+    client.list_executions.return_value = [
+        Execution(id=490, name="P00402-20260603", project="362", begin="2026-06-15"),
+        Execution(id=492, name="P00402-20260604", project="362", begin="2026-06-22"),
+    ]
+    mocker.patch("zentao_agent.execution_agent.client_from_profile", return_value=client)
+
+    result = execution_agent.list_project_executions(project_id=362, latest_only=True)
+
+    client.list_executions.assert_called_once_with(project=362, fetch_all=True)
+    assert result["executions"] == [
+        {
+            "id": 492,
+            "name": "P00402-20260604",
+            "project": "362",
+            "status": "",
+            "type": "",
+            "begin": "2026-06-22",
+            "end": "",
+        }
+    ]
+
+
+def test_execution_agent_finds_latest_involved_execution(mocker):
+    from zentao_agent import execution_agent
+
+    client = mocker.Mock()
+    client.list_projects.return_value = [
+        Project(id=33, name="P03010-WIZ Resource"),
+        Project(id=362, name="P00402-Youchao 3D Factory Design"),
+    ]
+    client.list_executions.return_value = [
+        Execution(id=490, name="P00402-20260603", project="362", begin="2026-06-15"),
+        Execution(id=492, name="P00402-20260604", project="362", begin="2026-06-22"),
+    ]
+    mocker.patch("zentao_agent.execution_agent.client_from_profile", return_value=client)
+
+    result = execution_agent.find_latest_involved_execution(project_name="Youchao")
+
+    client.list_projects.assert_called_once_with(involved=True, fetch_all=True)
+    client.list_executions.assert_called_once_with(project=362, fetch_all=True)
+    assert result["project"]["id"] == 362
+    assert result["execution"]["id"] == 492
+
+
+def test_root_agent_registers_product_execution_and_bug_agents():
+    from zentao_agent.agent import root_agent
+    from zentao_agent.bug_agent import bug_agent
+    from zentao_agent.execution_agent import execution_agent
+    from zentao_agent.product_agent import product_agent
+
+    assert product_agent in root_agent.sub_agents
+    assert execution_agent in root_agent.sub_agents
+    assert bug_agent in root_agent.sub_agents
