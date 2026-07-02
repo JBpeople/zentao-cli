@@ -38,11 +38,15 @@ def list_projects(
     page: int = typer.Option(1, "--page", min=1, help="Page number."),
     page_size: int = typer.Option(100, "--page-size", min=1, max=1000, help="Records per page."),
     fetch_all: bool = typer.Option(False, "--all", help="Fetch all pages."),
+    mine: bool = typer.Option(False, "--mine", help="Only show projects involving current user."),
     as_json: bool = typer.Option(False, "--json", help="Output JSON."),
 ) -> None:
     try:
         client = client_from_profile()
-        projects = client.list_projects(page=page, page_size=page_size, fetch_all=fetch_all)
+        if mine:
+            projects = client.list_projects(page=page, page_size=page_size, fetch_all=fetch_all, involved=True)
+        else:
+            projects = client.list_projects(page=page, page_size=page_size, fetch_all=fetch_all)
     except ZentaoCliError as exc:
         if as_json:
             typer.echo(error_payload(exc))

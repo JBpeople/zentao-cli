@@ -35,6 +35,20 @@ def test_project_list_passes_pagination_options(mocker):
     client.list_projects.assert_called_once_with(page=3, page_size=25, fetch_all=True)
 
 
+def test_project_list_mine_json(mocker):
+    client = mocker.Mock()
+    client.list_projects.return_value = [
+        Project(id=362, name="P00402-Youchao 3D Factory Design", status="doing", model="scrum", owner="wenjinlong")
+    ]
+    mocker.patch("zentao_cli.commands.project.client_from_profile", return_value=client)
+
+    result = runner.invoke(app, ["project", "list", "--mine", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["data"][0]["id"] == 362
+    client.list_projects.assert_called_once_with(page=1, page_size=100, fetch_all=False, involved=True)
+
+
 def test_project_view_json(mocker):
     client = mocker.Mock()
     client.get_project.return_value = Project(id=12, name="CRM Upgrade", status="doing", owner="alice")

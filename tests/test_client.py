@@ -190,6 +190,23 @@ def test_list_projects_returns_normalized_projects():
 
 
 @respx.mock
+def test_list_projects_passes_involved_filter():
+    route = respx.get("https://zentao.example.com/api.php/v1/projects").mock(
+        return_value=httpx.Response(
+            200,
+            json={"projects": [{"id": 362, "name": "P00402-Youchao 3D Factory Design", "status": "doing"}]},
+        )
+    )
+
+    client = ZentaoClient("https://zentao.example.com", session_id="abc123")
+    projects = client.list_projects(involved=True)
+
+    assert route.called
+    assert route.calls.last.request.url.params["involved"] == "1"
+    assert projects == [Project(id=362, name="P00402-Youchao 3D Factory Design", status="doing")]
+
+
+@respx.mock
 def test_get_project_returns_normalized_project():
     respx.get("https://zentao.example.com/api.php/v1/projects/12").mock(
         return_value=httpx.Response(
