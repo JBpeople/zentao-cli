@@ -4,6 +4,7 @@ __pycache__/
 .env.*
 .pytest_cache/
 .venv/
+.worktrees/
 dist/
 build/
 *.egg-info/
