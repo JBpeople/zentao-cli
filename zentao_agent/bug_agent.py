@@ -77,6 +77,34 @@ def get_bug(bug_id: int) -> dict[str, Any]:
     return {"bug": _bug_payload(bug)}
 
 
+def list_involved_projects(project_name: str | None = None) -> dict[str, Any]:
+    """List projects involving the current Zentao user, optionally filtered by name."""
+    try:
+        client = client_from_profile()
+        projects = [
+            project
+            for project in client.list_projects(involved=True, fetch_all=True)
+            if _matches_project_name(project, project_name)
+        ]
+    except ZentaoCliError as exc:
+        return {"error": str(exc)}
+    return {"projects": [_project_payload(project) for project in projects]}
+
+
+def list_project_executions(project_id: int, latest_only: bool = False) -> dict[str, Any]:
+    """List executions under one Zentao project, optionally returning only the latest one."""
+    try:
+        client = client_from_profile()
+        executions = client.list_executions(project=project_id, fetch_all=True)
+    except ZentaoCliError as exc:
+        return {"error": str(exc)}
+
+    if latest_only:
+        latest = _latest_execution([(Project(id=project_id, name=""), execution) for execution in executions])
+        executions = [] if latest is None else [latest[1]]
+    return {"executions": [_execution_payload(execution) for execution in executions]}
+
+
 def list_latest_execution_bugs(
     project_name: str | None = None,
     assigned_to: str | None = None,
@@ -132,6 +160,8 @@ bug_agent = LlmAgent(
     instruction=(
         "You are the Zentao bug specialist. Handle only read-only bug "
         "queries: list bugs, filter bugs, and inspect a single bug. "
+        "You can also discover the current user's involved projects and "
+        "list a project's executions before selecting an execution to query. "
         "When the user does not provide an execution ID, first use the "
         "latest-execution bug lookup tool so involved projects are checked, "
         "the latest execution is selected, and bugs are listed from there. "
@@ -139,5 +169,5 @@ bug_agent = LlmAgent(
         "create, update, close, or delete a bug, explain that this first "
         "stage only supports bug query operations."
     ),
-    tools=[list_bugs, list_latest_execution_bugs, get_bug],
+    tools=[list_involved_projects, list_project_executions, list_bugs, list_latest_execution_bugs, get_bug],
 )
