@@ -136,3 +136,11 @@ def test_bug_tools_return_structured_errors(mocker):
     assert bug_agent.get_bug(7) == {
         "error": "Not logged in. Run: zentao login"
     }
+
+
+def test_root_agent_registers_bug_agent():
+    from zentao_agent.agent import root_agent
+    from zentao_agent.bug_agent import bug_agent
+
+    assert bug_agent in root_agent.sub_agents
+    assert root_agent.name == "root_agent"

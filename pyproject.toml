@@ -50,7 +50,7 @@ Repository = "https://github.com/JBpeople/zentao-cli"
 Issues = "https://github.com/JBpeople/zentao-cli/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["zentao_cli"]
+packages = ["zentao_cli", "zentao_agent"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
