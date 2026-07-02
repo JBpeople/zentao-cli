@@ -195,8 +195,17 @@ class ZentaoClient:
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
         fetch_all: bool = False,
+        involved: bool = False,
     ) -> list[Project]:
-        raw_projects = self._paged_request("projects", "projects", page=page, page_size=page_size, fetch_all=fetch_all)
+        params = {"involved": 1} if involved else None
+        raw_projects = self._paged_request(
+            "projects",
+            "projects",
+            params=params,
+            page=page,
+            page_size=page_size,
+            fetch_all=fetch_all,
+        )
         return [Project.from_api(item) for item in raw_projects]
 
     def get_project(self, project_id: int) -> Project:

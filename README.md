@@ -114,6 +114,13 @@ zentao project list
 zentao project list --json
 ```
 
+只查看当前账号参与的项目：
+
+```bash
+zentao project list --mine
+zentao project list --mine --json
+```
+
 查看项目详情：
 
 ```bash

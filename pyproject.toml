@@ -3,12 +3,31 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "zentao-cli"
+name = "zentao"
 version = "0.1.0"
 description = "Command-line client for Zentao Open Source Edition 21.7.5"
 readme = "README.md"
 requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [
+  { name = "JBpeople" },
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Office/Business :: Groupware",
+  "Topic :: Utilities",
+]
 dependencies = [
+  "google-adk[extensions]>=2.3.0",
   "httpx>=0.27,<1",
   "platformdirs>=4,<5",
   "rich>=13,<14",
@@ -24,6 +43,14 @@ dev = [
 
 [project.scripts]
 zentao = "zentao_cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/JBpeople/zentao-cli"
+Repository = "https://github.com/JBpeople/zentao-cli"
+Issues = "https://github.com/JBpeople/zentao-cli/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["zentao_cli"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
