@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from zentao_cli.errors import AuthError
-from zentao_cli.models import Bug
+from zentao_cli.models import Bug, Execution, Project
 
 
 def test_list_bugs_returns_plain_dicts(mocker):
@@ -123,6 +123,61 @@ def test_get_bug_returns_plain_dict(mocker):
             "opened_by": "bob",
         }
     }
+
+
+def test_list_latest_execution_bugs_uses_latest_execution_from_involved_projects(mocker):
+    from zentao_agent import bug_agent
+
+    client = mocker.Mock()
+    client.list_projects.return_value = [
+        Project(id=33, name="P03010-WIZ Resource", status="doing"),
+        Project(id=362, name="P00402-Youchao 3D Factory Design", status="doing"),
+    ]
+    client.list_executions.return_value = [
+        Execution(id=490, name="P00402-20260603", project="362", begin="2026-06-15"),
+        Execution(id=492, name="P00402-20260604", project="362", begin="2026-06-22"),
+    ]
+    client.list_bugs.return_value = [Bug(id=1800, title="Layout detection level config is ineffective")]
+    mocker.patch("zentao_agent.bug_agent.client_from_profile", return_value=client)
+
+    result = bug_agent.list_latest_execution_bugs(project_name="Youchao")
+
+    client.list_projects.assert_called_once_with(involved=True, fetch_all=True)
+    client.list_executions.assert_called_once_with(project=362, fetch_all=True)
+    client.list_bugs.assert_called_once_with(
+        execution=492,
+        assigned_to=None,
+        opened_by=None,
+        status=None,
+        page=1,
+        page_size=100,
+        fetch_all=False,
+    )
+    assert result["project"]["id"] == 362
+    assert result["execution"]["id"] == 492
+    assert result["bugs"] == [
+        {
+            "id": 1800,
+            "title": "Layout detection level config is ineffective",
+            "status": "",
+            "severity": "",
+            "assigned_to": "",
+            "opened_by": "",
+        }
+    ]
+
+
+def test_list_latest_execution_bugs_returns_error_when_no_execution_exists(mocker):
+    from zentao_agent import bug_agent
+
+    client = mocker.Mock()
+    client.list_projects.return_value = [Project(id=362, name="P00402-Youchao 3D Factory Design")]
+    client.list_executions.return_value = []
+    mocker.patch("zentao_agent.bug_agent.client_from_profile", return_value=client)
+
+    result = bug_agent.list_latest_execution_bugs()
+
+    assert result == {"error": "No executions found for involved projects."}
 
 
 def test_bug_tools_return_structured_errors(mocker):
