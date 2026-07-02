@@ -344,12 +344,54 @@ def test_execution_agent_finds_latest_involved_execution(mocker):
     assert result["execution"]["id"] == 492
 
 
+def test_project_agent_lists_projects_as_plain_dicts(mocker):
+    from zentao_agent import project_agent
+
+    client = mocker.Mock()
+    client.list_projects.return_value = [
+        Project(id=362, name="P00402-Youchao 3D Factory Design", status="doing", owner="wenjinlong")
+    ]
+    mocker.patch("zentao_agent.project_agent.client_from_profile", return_value=client)
+
+    result = project_agent.list_projects(involved=True, page=2, page_size=50, fetch_all=True)
+
+    client.list_projects.assert_called_once_with(page=2, page_size=50, fetch_all=True, involved=True)
+    assert result == {
+        "projects": [
+            {
+                "id": 362,
+                "name": "P00402-Youchao 3D Factory Design",
+                "code": "",
+                "status": "doing",
+                "model": "",
+                "owner": "wenjinlong",
+            }
+        ]
+    }
+
+
+def test_project_agent_gets_project_as_plain_dict(mocker):
+    from zentao_agent import project_agent
+
+    client = mocker.Mock()
+    client.get_project.return_value = Project(id=362, name="P00402-Youchao 3D Factory Design", status="doing")
+    mocker.patch("zentao_agent.project_agent.client_from_profile", return_value=client)
+
+    result = project_agent.get_project(362)
+
+    client.get_project.assert_called_once_with(362)
+    assert result["project"]["id"] == 362
+    assert result["project"]["name"] == "P00402-Youchao 3D Factory Design"
+
+
 def test_root_agent_registers_product_execution_and_bug_agents():
     from zentao_agent.agent import root_agent
     from zentao_agent.bug_agent import bug_agent
     from zentao_agent.execution_agent import execution_agent
+    from zentao_agent.project_agent import project_agent
     from zentao_agent.product_agent import product_agent
 
+    assert project_agent in root_agent.sub_agents
     assert product_agent in root_agent.sub_agents
     assert execution_agent in root_agent.sub_agents
     assert bug_agent in root_agent.sub_agents
