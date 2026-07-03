@@ -32,6 +32,8 @@ dependencies = [
   "platformdirs>=4,<5",
   "rich>=13,<14",
   "typer>=0.12,<1",
+  "websockets>=12,<16",
+  "wecom-aibot-python-sdk>=1.0.2",
 ]
 
 [project.optional-dependencies]
@@ -43,6 +45,7 @@ dev = [
 
 [project.scripts]
 zentao = "zentao_cli.main:app"
+zentao-wecom-bot = "zentao_agent.wecom_bot:main"
 
 [project.urls]
 Homepage = "https://github.com/JBpeople/zentao-cli"

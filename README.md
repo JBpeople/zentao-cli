@@ -41,6 +41,39 @@ zentao --help
 python -m zentao_cli.main --help
 ```
 
+## WeCom long connection bot
+
+The ADK agent team can be exposed through a WeCom intelligent bot long
+connection. Configure the bot credentials in environment variables:
+
+```env
+WECOM_BOT_ID=your-bot-id
+WECOM_BOT_SECRET=your-bot-secret
+WECHAT_BOT_ID=your-bot-id
+WECHAT_BOT_SECRET=your-bot-secret
+WECHAT_BOT_WS_URL=wss://openws.work.weixin.qq.com
+```
+
+The bridge accepts either `WECHAT_BOT_ID` / `WECHAT_BOT_SECRET` or the older
+`WECOM_BOT_ID` / `WECOM_BOT_SECRET` names. `WECHAT_BOT_WS_URL` is optional; the
+SDK uses its default WebSocket URL when it is omitted.
+
+Start the bridge:
+
+```bash
+zentao-wecom-bot
+```
+
+Or run the module directly:
+
+```bash
+python -m zentao_agent.wecom_bot
+```
+
+The bridge uses `wecom-aibot-python-sdk`, listens for `message.text`, runs the
+Zentao ADK app or root agent, and replies with SDK stream messages. Each WeCom
+`chatid + userid` pair maps to a separate ADK session.
+
 ## 登录
 
 推荐把本地凭据放在 `.env`，这样 token 过期时 CLI 会自动重新登录：
