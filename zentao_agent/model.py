@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import os
 
+from dotenv import load_dotenv
 from google.adk.models.lite_llm import LiteLlm
+
+load_dotenv()
 
 DEFAULT_MODEL = "openai/deepseek-ai/deepseek-v4-flash"
 

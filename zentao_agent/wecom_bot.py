@@ -5,11 +5,14 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from aibot import WSClient, WSClientOptions, generate_req_id
+from dotenv import load_dotenv
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from zentao_cli.config import load_project_env
+
+load_dotenv()  # Load environment variables from .env file
 
 DEFAULT_PROCESSING_TEXT = "正在思考中..."
 DEFAULT_WELCOME_TEXT = "您好！我是禅道智能助手，有什么可以帮您？"
