@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from zentao_cli.config import Profile, load_profile, load_project_env, save_profile
+from zentao_cli.config import Profile, find_project_env_path, load_profile, load_project_env, save_profile
 
 
 def test_save_and_load_default_profile(tmp_path: Path):
@@ -43,3 +43,12 @@ def test_load_project_env_reads_simple_key_values(tmp_path: Path):
         "ZENTAO_USERNAME": "alice",
         "ZENTAO_PASSWORD": "secret",
     }
+
+
+def test_find_project_env_path_searches_parent_directories(tmp_path: Path):
+    env_path = tmp_path / ".env"
+    env_path.write_text("WECOM_BOT_ID=bot-1\n", encoding="utf-8")
+    nested = tmp_path / ".worktrees" / "feature"
+    nested.mkdir(parents=True)
+
+    assert find_project_env_path(start=nested) == env_path

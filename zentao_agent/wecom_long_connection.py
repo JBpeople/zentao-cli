@@ -13,6 +13,8 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
+from zentao_cli.config import load_project_env
+
 DEFAULT_WEBSOCKET_URL = "wss://openws.work.weixin.qq.com"
 SUBSCRIBE_CMD = "aibot_subscribe"
 MESSAGE_CALLBACK_CMD = "aibot_msg_callback"
@@ -37,8 +39,9 @@ class WeComBotConfig:
 
     @classmethod
     def from_env(cls) -> WeComBotConfig:
-        bot_id = os.environ.get("WECOM_BOT_ID")
-        secret = os.environ.get("WECOM_BOT_SECRET")
+        file_values = load_project_env()
+        bot_id = os.environ.get("WECOM_BOT_ID") or file_values.get("WECOM_BOT_ID")
+        secret = os.environ.get("WECOM_BOT_SECRET") or file_values.get("WECOM_BOT_SECRET")
         if not bot_id:
             raise RuntimeError("WECOM_BOT_ID is required.")
         if not secret:
@@ -46,8 +49,14 @@ class WeComBotConfig:
         return cls(
             bot_id=bot_id,
             secret=secret,
-            websocket_url=os.environ.get("WECOM_WS_URL", DEFAULT_WEBSOCKET_URL),
-            reconnect_seconds=float(os.environ.get("WECOM_RECONNECT_SECONDS", "5")),
+            websocket_url=os.environ.get("WECOM_WS_URL")
+            or file_values.get("WECOM_WS_URL")
+            or DEFAULT_WEBSOCKET_URL,
+            reconnect_seconds=float(
+                os.environ.get("WECOM_RECONNECT_SECONDS")
+                or file_values.get("WECOM_RECONNECT_SECONDS")
+                or "5"
+            ),
         )
 
 

@@ -23,7 +23,24 @@ def default_config_path() -> Path:
     return Path(user_config_dir(APP_NAME)) / "config.toml"
 
 
-def load_project_env(path: Path = PROJECT_ENV_PATH) -> dict[str, str]:
+def find_project_env_path(start: Path | None = None) -> Path | None:
+    current = (start or Path.cwd()).resolve()
+    if current.is_file():
+        current = current.parent
+
+    for directory in (current, *current.parents):
+        path = directory / PROJECT_ENV_PATH
+        if path.exists():
+            return path
+    return None
+
+
+def load_project_env(path: Path | None = None) -> dict[str, str]:
+    if path is None:
+        path = find_project_env_path()
+        if path is None:
+            return {}
+
     if not path.exists():
         return {}
 

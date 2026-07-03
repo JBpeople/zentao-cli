@@ -23,6 +23,30 @@ def test_config_reads_required_env(monkeypatch):
     assert config.websocket_url == "wss://openws.work.weixin.qq.com"
 
 
+def test_config_reads_project_env_when_process_env_is_missing(monkeypatch, tmp_path):
+    monkeypatch.delenv("WECOM_BOT_ID", raising=False)
+    monkeypatch.delenv("WECOM_BOT_SECRET", raising=False)
+    nested = tmp_path / ".worktrees" / "feature"
+    nested.mkdir(parents=True)
+    monkeypatch.chdir(nested)
+    (tmp_path / ".env").write_text(
+        "\n".join(
+            [
+                "WECOM_BOT_ID=bot-from-file",
+                "WECOM_BOT_SECRET=secret-from-file",
+                "WECOM_WS_URL=wss://example.invalid",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = WeComBotConfig.from_env()
+
+    assert config.bot_id == "bot-from-file"
+    assert config.secret == "secret-from-file"
+    assert config.websocket_url == "wss://example.invalid"
+
+
 def test_build_subscribe_frame():
     config = WeComBotConfig(bot_id="bot-1", secret="secret-1")
 
