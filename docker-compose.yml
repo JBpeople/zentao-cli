@@ -1,0 +1,10 @@
+services:
+  zentao-wecom-bot:
+    build:
+      context: .
+    image: zentao-wecom-bot:local
+    env_file:
+      - .env
+    restart: unless-stopped
+    init: true
+    command: ["zentao-wecom-bot"]

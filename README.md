@@ -64,6 +64,17 @@ Start the bridge:
 zentao-wecom-bot
 ```
 
+Run with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Compose reads runtime configuration from the project `.env` file. The Docker
+build ignores `.env`, so local credentials are not baked into the image. The
+long connection bot only needs outbound network access, so no port mapping is
+required.
+
 Or run the module directly:
 
 ```bash
