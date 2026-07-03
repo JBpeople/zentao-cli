@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from zentao_cli.errors import AuthError
-from zentao_cli.models import Bug, Execution, Product, Project
+from zentao_cli.models import Bug, Execution, Product, Project, Task
 
 
 def test_list_bugs_returns_plain_dicts(mocker):
@@ -142,6 +142,224 @@ def test_bug_tools_return_structured_errors(mocker):
     )
 
     assert bug_agent.get_bug(7) == {
+        "error": "Not logged in. Run: zentao login"
+    }
+
+
+def test_task_agent_lists_tasks_as_plain_dicts(mocker):
+    from zentao_agent import task_agent
+
+    client = mocker.Mock()
+    client.list_tasks.return_value = [
+        Task(id=1, name="Fix login", status="doing", priority="2", assigned_to="alice")
+    ]
+    mocker.patch("zentao_agent.task_agent.client_from_profile", return_value=client)
+
+    result = task_agent.list_tasks(
+        execution=303,
+        mine=True,
+        status="doing",
+        opened_by="bob",
+        page=2,
+        page_size=50,
+        fetch_all=True,
+    )
+
+    client.list_tasks.assert_called_once_with(
+        execution=303,
+        mine=True,
+        status="doing",
+        opened_by="bob",
+        page=2,
+        page_size=50,
+        fetch_all=True,
+    )
+    assert result == {
+        "tasks": [
+            {
+                "id": 1,
+                "name": "Fix login",
+                "project": "",
+                "status": "doing",
+                "priority": "2",
+                "deadline": "",
+                "assigned_to": "alice",
+                "opened_by": "",
+            }
+        ]
+    }
+
+
+def test_task_agent_resolves_me_for_opened_by(mocker):
+    from zentao_agent import task_agent
+
+    client = mocker.Mock()
+    client.list_tasks.return_value = []
+    mocker.patch("zentao_agent.task_agent.client_from_profile", return_value=client)
+    mocker.patch("zentao_agent.task_agent.current_username", return_value="yangchangkun")
+
+    result = task_agent.list_tasks(execution=303, opened_by="me")
+
+    client.list_tasks.assert_called_once_with(
+        execution=303,
+        mine=False,
+        status=None,
+        opened_by="yangchangkun",
+        page=1,
+        page_size=100,
+        fetch_all=False,
+    )
+    assert result == {"tasks": []}
+
+
+def test_task_agent_gets_task_as_plain_dict(mocker):
+    from zentao_agent import task_agent
+
+    client = mocker.Mock()
+    client.get_task.return_value = Task(id=9, name="Build import", status="wait", priority="3")
+    mocker.patch("zentao_agent.task_agent.client_from_profile", return_value=client)
+
+    result = task_agent.get_task(9)
+
+    client.get_task.assert_called_once_with(9)
+    assert result["task"]["id"] == 9
+    assert result["task"]["name"] == "Build import"
+
+
+def test_task_agent_creates_task_as_plain_dict(mocker):
+    from zentao_agent import task_agent
+
+    client = mocker.Mock()
+    client.create_task.return_value = Task(id=9, name="Build import", status="wait", assigned_to="alice")
+    mocker.patch("zentao_agent.task_agent.client_from_profile", return_value=client)
+
+    result = task_agent.create_task(
+        execution=303,
+        name="Build import",
+        est_started="2026-06-01",
+        deadline="2026-06-05",
+        story=789,
+        task_type="devel",
+        assigned_to="alice",
+        estimate=2.5,
+        pri=3,
+        desc="Build import flow",
+    )
+
+    client.create_task.assert_called_once_with(
+        execution=303,
+        name="Build import",
+        est_started="2026-06-01",
+        deadline="2026-06-05",
+        story=789,
+        task_type="devel",
+        assigned_to="alice",
+        estimate=2.5,
+        pri=3,
+        desc="Build import flow",
+    )
+    assert result["task"]["id"] == 9
+    assert result["task"]["assigned_to"] == "alice"
+
+
+def test_task_agent_updates_task_as_plain_dict(mocker):
+    from zentao_agent import task_agent
+
+    client = mocker.Mock()
+    client.update_task.return_value = Task(id=9, name="Build import v2", status="doing", priority="2")
+    mocker.patch("zentao_agent.task_agent.client_from_profile", return_value=client)
+
+    result = task_agent.update_task(
+        task_id=9,
+        name="Build import v2",
+        status="doing",
+        assigned_to="bob",
+        estimate=3.5,
+        deadline="2026-06-10",
+        est_started="2026-06-02",
+        pri=2,
+        desc="Updated task body",
+        task_type="test",
+    )
+
+    client.update_task.assert_called_once_with(
+        task_id=9,
+        name="Build import v2",
+        status="doing",
+        assigned_to="bob",
+        estimate=3.5,
+        deadline="2026-06-10",
+        est_started="2026-06-02",
+        pri=2,
+        desc="Updated task body",
+        task_type="test",
+    )
+    assert result["task"]["status"] == "doing"
+
+
+def test_task_agent_deletes_task(mocker):
+    from zentao_agent import task_agent
+
+    client = mocker.Mock()
+    client.delete_task.return_value = {"id": 9, "deleted": True}
+    mocker.patch("zentao_agent.task_agent.client_from_profile", return_value=client)
+
+    result = task_agent.delete_task(9)
+
+    client.delete_task.assert_called_once_with(9)
+    assert result == {"result": {"id": 9, "deleted": True}}
+
+
+def test_task_agent_comments_on_task(mocker):
+    from zentao_agent import task_agent
+
+    client = mocker.Mock()
+    mocker.patch("zentao_agent.task_agent.client_from_profile", return_value=client)
+
+    result = task_agent.comment_task(task_id=9, content="Done")
+
+    client.comment_task.assert_called_once_with(9, "Done")
+    assert result == {"task": 9, "commented": True}
+
+
+def test_task_agent_finishes_task_as_plain_dict(mocker):
+    from zentao_agent import task_agent
+
+    client = mocker.Mock()
+    client.finish_task.return_value = Task(id=9, name="Build import", status="done")
+    mocker.patch("zentao_agent.task_agent.client_from_profile", return_value=client)
+
+    result = task_agent.finish_task(task_id=9, comment="Done")
+
+    client.finish_task.assert_called_once_with(9, comment="Done")
+    assert result["task"]["status"] == "done"
+
+
+def test_task_agent_exposes_only_task_tools():
+    from zentao_agent.task_agent import task_agent
+
+    tool_names = [tool.__name__ for tool in task_agent.tools]
+
+    assert tool_names == [
+        "list_tasks",
+        "get_task",
+        "create_task",
+        "update_task",
+        "delete_task",
+        "comment_task",
+        "finish_task",
+    ]
+
+
+def test_task_tools_return_structured_errors(mocker):
+    from zentao_agent import task_agent
+
+    mocker.patch(
+        "zentao_agent.task_agent.client_from_profile",
+        side_effect=AuthError("Not logged in. Run: zentao login"),
+    )
+
+    assert task_agent.get_task(9) == {
         "error": "Not logged in. Run: zentao login"
     }
 
@@ -288,10 +506,12 @@ def test_root_agent_registers_product_execution_and_bug_agents():
     from zentao_agent.execution_agent import execution_agent
     from zentao_agent.project_agent import project_agent
     from zentao_agent.product_agent import product_agent
+    from zentao_agent.task_agent import task_agent
 
     assert project_agent in root_agent.sub_agents
     assert product_agent in root_agent.sub_agents
     assert execution_agent in root_agent.sub_agents
+    assert task_agent in root_agent.sub_agents
     assert bug_agent in root_agent.sub_agents
 
 
@@ -304,3 +524,12 @@ def test_root_agent_describes_project_execution_bug_chain():
     assert "project_agent first" in root_agent.instruction
     assert "execution_agent second" in root_agent.instruction
     assert "bug_agent last" in root_agent.instruction
+
+
+def test_root_agent_describes_project_execution_task_chain():
+    from zentao_agent.agent import root_agent
+
+    assert "task_agent" in root_agent.instruction
+    assert "project_agent first" in root_agent.instruction
+    assert "execution_agent second" in root_agent.instruction
+    assert "task_agent last" in root_agent.instruction
