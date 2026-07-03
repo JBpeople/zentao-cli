@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from google.adk.agents import LlmAgent
+from google.adk.agents.context_cache_config import ContextCacheConfig
+from google.adk.apps.app import App, EventsCompactionConfig
 
 from zentao_agent.bug_agent import bug_agent
 from zentao_agent.execution_agent import execution_agent
 from zentao_agent.model import zentao_model
-from zentao_agent.project_agent import project_agent
 from zentao_agent.product_agent import product_agent
+from zentao_agent.project_agent import project_agent
 from zentao_agent.task_agent import task_agent
-
 
 root_agent = LlmAgent(
     model=zentao_model(),
@@ -35,4 +36,18 @@ root_agent = LlmAgent(
         "available specialists, explain the current limitation briefly."
     ),
     sub_agents=[project_agent, product_agent, execution_agent, task_agent, bug_agent],
+)
+
+app = App(
+    name="app",
+    root_agent=root_agent,
+    events_compaction_config=EventsCompactionConfig(
+        compaction_interval=2,
+        overlap_size=1,
+    ),
+    context_cache_config=ContextCacheConfig(
+        cache_intervals=10,
+        ttl_seconds=1800,
+        min_tokens=1000,
+    ),
 )

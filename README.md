@@ -49,11 +49,14 @@ connection. Configure the bot credentials in environment variables:
 ```env
 WECOM_BOT_ID=your-bot-id
 WECOM_BOT_SECRET=your-bot-secret
-WECOM_WS_URL=wss://openws.work.weixin.qq.com
+WECHAT_BOT_ID=your-bot-id
+WECHAT_BOT_SECRET=your-bot-secret
+WECHAT_BOT_WS_URL=wss://openws.work.weixin.qq.com
 ```
 
-`WECOM_WS_URL` is optional and defaults to
-`wss://openws.work.weixin.qq.com`.
+The bridge accepts either `WECHAT_BOT_ID` / `WECHAT_BOT_SECRET` or the older
+`WECOM_BOT_ID` / `WECOM_BOT_SECRET` names. `WECHAT_BOT_WS_URL` is optional; the
+SDK uses its default WebSocket URL when it is omitted.
 
 Start the bridge:
 
@@ -64,13 +67,12 @@ zentao-wecom-bot
 Or run the module directly:
 
 ```bash
-python -m zentao_agent.wecom_long_connection
+python -m zentao_agent.wecom_bot
 ```
 
-The bridge subscribes with `aibot_subscribe`, handles text callbacks from
-`aibot_msg_callback`, runs the Zentao ADK app or root agent, and replies with
-`aibot_respond_msg`. Each WeCom `chatid + userid` pair maps to a separate ADK
-session.
+The bridge uses `wecom-aibot-python-sdk`, listens for `message.text`, runs the
+Zentao ADK app or root agent, and replies with SDK stream messages. Each WeCom
+`chatid + userid` pair maps to a separate ADK session.
 
 ## 登录
 
