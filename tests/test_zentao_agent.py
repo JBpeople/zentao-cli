@@ -125,12 +125,118 @@ def test_get_bug_returns_plain_dict(mocker):
     }
 
 
+def test_bug_agent_creates_bug_as_plain_dict(mocker):
+    from zentao_agent import bug_agent
+
+    client = mocker.Mock()
+    client.create_bug.return_value = Bug(id=7, title="Crash on import", status="active", severity="3")
+    mocker.patch("zentao_agent.bug_agent.client_from_profile", return_value=client)
+
+    result = bug_agent.create_bug(
+        execution=303,
+        title="Crash on import",
+        steps="1. Open import\n2. Crash",
+        product=5,
+        severity=3,
+        pri=2,
+        bug_type="codeerror",
+        assigned_to="alice",
+        opened_build="trunk",
+        deadline="2026-07-10",
+    )
+
+    client.create_bug.assert_called_once_with(
+        execution=303,
+        title="Crash on import",
+        steps="1. Open import\n2. Crash",
+        product=5,
+        severity=3,
+        pri=2,
+        bug_type="codeerror",
+        assigned_to="alice",
+        opened_build="trunk",
+        deadline="2026-07-10",
+    )
+    assert result["bug"]["id"] == 7
+    assert result["bug"]["title"] == "Crash on import"
+
+
+def test_bug_agent_resolves_me_when_creating_bug(mocker):
+    from zentao_agent import bug_agent
+
+    client = mocker.Mock()
+    client.create_bug.return_value = Bug(id=7, title="Crash on import", assigned_to="yangchangkun")
+    mocker.patch("zentao_agent.bug_agent.client_from_profile", return_value=client)
+    mocker.patch("zentao_agent.bug_agent.current_username", return_value="yangchangkun")
+
+    result = bug_agent.create_bug(execution=303, title="Crash", steps="Steps", assigned_to="me")
+
+    client.create_bug.assert_called_once_with(
+        execution=303,
+        title="Crash",
+        steps="Steps",
+        product=None,
+        severity=3,
+        pri=3,
+        bug_type="codeerror",
+        assigned_to="yangchangkun",
+        opened_build="trunk",
+        deadline=None,
+    )
+    assert result["bug"]["assigned_to"] == "yangchangkun"
+
+
+def test_bug_agent_updates_bug_as_plain_dict(mocker):
+    from zentao_agent import bug_agent
+
+    client = mocker.Mock()
+    client.update_bug.return_value = Bug(id=7, title="Crash on import v2", status="active", severity="2")
+    mocker.patch("zentao_agent.bug_agent.client_from_profile", return_value=client)
+
+    result = bug_agent.update_bug(
+        bug_id=7,
+        title="Crash on import v2",
+        steps="Updated steps",
+        severity=2,
+        pri=1,
+        bug_type="config",
+        assigned_to="bob",
+        deadline="2026-07-11",
+    )
+
+    client.update_bug.assert_called_once_with(
+        bug_id=7,
+        title="Crash on import v2",
+        steps="Updated steps",
+        severity=2,
+        pri=1,
+        bug_type="config",
+        assigned_to="bob",
+        deadline="2026-07-11",
+    )
+    assert result["bug"]["title"] == "Crash on import v2"
+    assert result["bug"]["severity"] == "2"
+
+
+def test_bug_agent_deletes_bug(mocker):
+    from zentao_agent import bug_agent
+
+    client = mocker.Mock()
+    client.delete_bug.return_value = {"id": 7, "deleted": True}
+    mocker.patch("zentao_agent.bug_agent.client_from_profile", return_value=client)
+
+    result = bug_agent.delete_bug(7)
+
+    client.delete_bug.assert_called_once_with(7)
+    assert result == {"result": {"id": 7, "deleted": True}}
+
+
 def test_bug_agent_exposes_only_bug_tools():
     from zentao_agent.bug_agent import bug_agent
 
     tool_names = [tool.__name__ for tool in bug_agent.tools]
 
-    assert tool_names == ["list_bugs", "get_bug"]
+    assert tool_names == ["list_bugs", "get_bug", "create_bug", "update_bug", "delete_bug"]
 
 
 def test_bug_tools_return_structured_errors(mocker):

@@ -57,19 +57,91 @@ def get_bug(bug_id: int) -> dict[str, Any]:
     return {"bug": _bug_payload(bug)}
 
 
+def create_bug(
+    execution: int,
+    title: str,
+    steps: str,
+    product: int | None = None,
+    severity: int = 3,
+    pri: int = 3,
+    bug_type: str = "codeerror",
+    assigned_to: str | None = None,
+    opened_build: str = "trunk",
+    deadline: str | None = None,
+) -> dict[str, Any]:
+    """Create a Zentao bug in one execution."""
+    try:
+        client = client_from_profile()
+        bug = client.create_bug(
+            execution=execution,
+            title=title,
+            steps=steps,
+            product=product,
+            severity=severity,
+            pri=pri,
+            bug_type=bug_type,
+            assigned_to=_resolve_me(assigned_to),
+            opened_build=opened_build,
+            deadline=deadline,
+        )
+    except ZentaoCliError as exc:
+        return {"error": str(exc)}
+    return {"bug": _bug_payload(bug)}
+
+
+def update_bug(
+    bug_id: int,
+    title: str | None = None,
+    steps: str | None = None,
+    severity: int | None = None,
+    pri: int | None = None,
+    bug_type: str | None = None,
+    assigned_to: str | None = None,
+    deadline: str | None = None,
+) -> dict[str, Any]:
+    """Update fields on one Zentao bug."""
+    try:
+        client = client_from_profile()
+        bug = client.update_bug(
+            bug_id=bug_id,
+            title=title,
+            steps=steps,
+            severity=severity,
+            pri=pri,
+            bug_type=bug_type,
+            assigned_to=_resolve_me(assigned_to),
+            deadline=deadline,
+        )
+    except ZentaoCliError as exc:
+        return {"error": str(exc)}
+    return {"bug": _bug_payload(bug)}
+
+
+def delete_bug(bug_id: int) -> dict[str, Any]:
+    """Delete one Zentao bug by id."""
+    try:
+        client = client_from_profile()
+        result = client.delete_bug(bug_id)
+    except ZentaoCliError as exc:
+        return {"error": str(exc)}
+    return {"result": result}
+
+
 bug_agent = LlmAgent(
     model=zentao_model(),
     name="bug_agent",
-    description="Handles read-only Zentao bug query workflows.",
+    description="Handles Zentao bug workflows.",
     instruction=(
-        "You are the Zentao bug specialist. Handle only read-only bug "
-        "queries: list bugs, filter bugs, and inspect a single bug. "
-        "Use list_bugs only after an execution ID is known. If the user has "
-        "not provided an execution ID, ask the coordinator to get project and "
-        "execution context from the project and execution specialists first. "
-        "Use the provided tools for all bug data. If the user asks to create, "
-        "update, close, or delete a bug, explain that this first stage only "
-        "supports bug query operations."
+        "You are the Zentao bug specialist. Handle bug requests: list bugs, "
+        "filter bugs, inspect a single bug, create a bug, update fields, and "
+        "delete a bug. Use list_bugs and create_bug only after an execution "
+        "ID is known. If the user has not provided an execution ID, ask the "
+        "coordinator to get project and execution context from the project "
+        "and execution specialists first. If create_bug needs an explicit "
+        "product ID, ask the coordinator to get product context from the "
+        "product specialist first. Delete bugs only when the user clearly "
+        "requests deletion of a specific bug ID. Use the provided tools for "
+        "all bug data. Do not answer bug data questions from memory."
     ),
-    tools=[list_bugs, get_bug],
+    tools=[list_bugs, get_bug, create_bug, update_bug, delete_bug],
 )
